@@ -140,12 +140,12 @@
                                             <div class="text-sm font-medium text-gray-900">
                                                 {{ prestacion.nombre }}
                                             </div>
-                                            <div v-if="prestacion.rubro" class="text-xs text-purple-600 mt-1">
+                                            <!-- <div v-if="prestacion.rubro" class="text-xs text-purple-600 mt-1">
                                                 {{ prestacion.rubro.nombre }}
                                             </div>
                                             <div v-if="prestacion.descripcion" class="text-xs text-gray-500 mt-1 line-clamp-1">
                                                 {{ prestacion.descripcion }}
-                                            </div>
+                                            </div> -->
                                         </div>
                                     </div>
                                 </td>
