@@ -17,7 +17,9 @@ import {
     mdiFileDocumentMultiple,
     mdiMedicalBag,
     mdiFolderMultiple,
-    mdiCashCheck
+    mdiCashCheck,
+    mdiDoctor,
+    mdiCurrencyUsd
 } from '@mdi/js'
 
 export default [
@@ -107,6 +109,11 @@ export default [
                 to: '/reportes/ordenes',
                 label: 'Órdenes',
                 icon: mdiClipboardList
+            },
+            {
+                to: '/reportes/ventas',
+                label: 'Ventas',
+                icon: mdiCurrencyUsd
             }
         ]
     },
@@ -114,68 +121,75 @@ export default [
         label: 'Configuración',
         icon: mdiCog,
         menu: [
-            // Usuarios
             {
-                to: '/users',
-                label: 'Lista de Usuarios',
-                icon: mdiAccountGroup
+                label: 'Prestaciones',
+                icon: mdiMedicalBag,
+                menu: [
+                    {
+                        to: '/prestaciones',
+                        label: 'Lista de Prestaciones',
+                        icon: mdiMedicalBag
+                    },
+                    {
+                        to: '/prestaciones/create',
+                        label: 'Nueva Prestación',
+                        icon: mdiMedicalBag
+                    }
+                ]
             },
             {
-                to: '/users/create',
-                label: 'Crear Usuario',
-                icon: mdiAccountCircle
-            },
-            // Roles y Permisos
-            {
-                to: '/roles',
-                label: 'Roles y Permisos',
-                icon: mdiLock
-            },
-            // Planes
-            {
-                to: '/planes',
-                label: 'Lista de Planes',
-                icon: mdiCreditCard
-            },
-            {
-                to: '/planes/create',
-                label: 'Crear Plan',
-                icon: mdiCreditCard
-            },
-            // Rubros
-            {
-                to: '/rubros',
-                label: 'Lista de Rubros',
-                icon: mdiFolderMultiple
+                label: 'Planes',
+                icon: mdiCreditCard,
+                menu: [
+                    {
+                        to: '/planes',
+                        label: 'Lista de Planes',
+                        icon: mdiCreditCard
+                    },
+                    {
+                        to: '/planes/create',
+                        label: 'Nuevo Plan',
+                        icon: mdiCreditCard
+                    }
+                ]
             },
             {
-                to: '/rubros/create',
-                label: 'Crear Rubro',
-                icon: mdiFolderMultiple
-            },
-            // Prestaciones
-            {
-                to: '/prestaciones',
-                label: 'Lista de Prestaciones',
-                icon: mdiMedicalBag
-            },
-            {
-                to: '/prestaciones/create',
-                label: 'Crear Prestación',
-                icon: mdiMedicalBag
-            },
-            // Sucursales
-            {
-                to: '/sucursales',
-                label: 'Lista de Sucursales',
-                icon: mdiBankTransfer
+                label: 'Usuarios y Accesos',
+                icon: mdiAccountGroup,
+                menu: [
+                    {
+                        to: '/users',
+                        label: 'Usuarios',
+                        icon: mdiAccountMultiple
+                    },
+                    {
+                        to: '/roles',
+                        label: 'Roles y Permisos',
+                        icon: mdiLock
+                    }
+                ]
             },
             {
-                to: '/sucursales/create',
-                label: 'Crear Sucursal',
-                icon: mdiBankTransfer
+                label: 'Datos Maestros',
+                icon: mdiTable,
+                menu: [
+                    {
+                        to: '/prestadores',
+                        label: 'Prestadores',
+                        icon: mdiDoctor
+                    },
+                    {
+                        to: '/rubros',
+                        label: 'Rubros',
+                        icon: mdiFolderMultiple
+                    },
+                    {
+                        to: '/sucursales',
+                        label: 'Sucursales',
+                        icon: mdiBankTransfer
+                    }
+                ]
             },
-            // Configuración General
             {
                 to: '/settings',
                 label: 'Configuración General',

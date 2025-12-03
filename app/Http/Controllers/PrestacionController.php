@@ -14,6 +14,7 @@ class PrestacionController extends Controller
     {
         $prestaciones = Prestacion::query()
             ->with('rubro')
+            ->withCount('planes')
             ->when($request->search, function($query, $search) {
                 $query->buscar($search);
             })
@@ -55,10 +56,15 @@ class PrestacionController extends Controller
             'descripcion' => 'nullable|string',
             'estado' => 'required|in:activo,inactivo,suspendido',
             'rubro_id' => 'required|exists:rubros,id',
-            'precio_general' => 'required|numeric|min:0',
-            'valor_ips' => 'nullable|numeric|min:0',
+            'precio_general' => 'nullable|numeric|min:0',
+            'precio_afiliado' => 'nullable|numeric|min:0',
+            'valor_ips' => 'required|numeric|min:0',
+            'porc_ips' => 'required|numeric|min:-100',
             'observaciones' => 'nullable|string'
         ]);
+
+        // Calcular val_ref automáticamente con redondeo estándar
+        $validated['val_ref'] = round($validated['valor_ips'] * (1 + ($validated['porc_ips'] / 100)));
 
         Prestacion::create($validated);
 
@@ -92,20 +98,43 @@ class PrestacionController extends Controller
 
     public function update(Request $request, Prestacion $prestacion)
     {
+        \Log::info('=== PRESTACION UPDATE REQUEST ===');
+        \Log::info('Request data:', $request->all());
+        \Log::info('Prestacion ID:', ['id' => $prestacion->id]);
+
         $validated = $request->validate([
             'codigo' => 'required|string|size:6|regex:/^\d{6}$/|unique:prestaciones,codigo,' . $prestacion->id,
             'nombre' => 'required|string|max:200',
             'descripcion' => 'nullable|string',
             'estado' => 'required|in:activo,inactivo,suspendido',
             'rubro_id' => 'required|exists:rubros,id',
-            'precio_general' => 'required|numeric|min:0',
-            'valor_ips' => 'nullable|numeric|min:0',
+            'precio_general' => 'nullable|numeric|min:0',
+            'precio_afiliado' => 'nullable|numeric|min:0',
+            'valor_ips' => 'required|numeric|min:0',
+            'porc_ips' => 'required|numeric|min:-100',
+            'uvr' => 'nullable|numeric|min:0',
             'observaciones' => 'nullable|string'
         ]);
 
+        // Calcular val_ref automáticamente con redondeo estándar
+        $validated['val_ref'] = round($validated['valor_ips'] * (1 + ($validated['porc_ips'] / 100)));
+
+        \Log::info('Validated data:', $validated);
+
+        // Si se está desactivando la prestación, desactivarla también en todos los planes
+        if ($validated['estado'] === 'inactivo' && $prestacion->estado === 'activo') {
+            \Log::info('Desactivando prestación en todos los planes vinculados');
+            // Actualizar el estado en la tabla pivot prestaciones_planes
+            \DB::table('prestaciones_planes')
+                ->where('prestacion_id', $prestacion->id)
+                ->update(['estado' => 'inactivo', 'updated_at' => now()]);
+        }
+
         $prestacion->update($validated);
 
-        return redirect()->route('prestaciones.index')
+        \Log::info('✅ Prestacion updated successfully');
+
+        return redirect()->route('prestaciones.show', $prestacion)
             ->with('success', 'Prestación actualizada exitosamente');
     }
 

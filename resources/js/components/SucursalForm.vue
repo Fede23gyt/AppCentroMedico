@@ -2,7 +2,7 @@
     <form @submit.prevent="handleSubmit" class="space-y-6">
         <!-- Información General -->
         <div class="bg-white p-6 rounded-lg shadow">
-            <h3 class="text-lg font-medium text-gray-900 mb-4">Información General</h3>
+            <h3 class="text-lg font-semibold text-white mb-4 p-4 rounded-lg" style="background-color: #2D6660;">Información General</h3>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <!-- Nombre -->
@@ -71,7 +71,7 @@
 
         <!-- Información de Contacto -->
         <div class="bg-white p-6 rounded-lg shadow">
-            <h3 class="text-lg font-medium text-gray-900 mb-4">Información de Contacto</h3>
+            <h3 class="text-lg font-semibold text-white mb-4 p-4 rounded-lg" style="background-color: #2D6660;">Información de Contacto</h3>
 
             <div class="space-y-6">
                 <!-- Dirección -->
@@ -133,6 +133,38 @@
             </div>
         </div>
 
+        <!-- Planes Asignados (solo en edición) -->
+        <div v-if="isEdit && planesDisponibles" class="bg-white p-6 rounded-lg shadow">
+            <h3 class="text-lg font-semibold text-white mb-4 p-4 rounded-lg" style="background-color: #2D6660;">Planes de Salud Asignados</h3>
+
+            <div class="border border-gray-300 rounded-md p-4 bg-gray-50 max-h-64 overflow-y-auto">
+                <div v-if="planesDisponibles && planesDisponibles.length > 0" class="space-y-2">
+                    <label
+                        v-for="plan in planesDisponibles"
+                        :key="plan.id"
+                        class="flex items-center space-x-3 p-2 hover:bg-gray-100 rounded cursor-pointer"
+                    >
+                        <input
+                            type="checkbox"
+                            :value="plan.id"
+                            v-model="form.planes"
+                            class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                        />
+                        <span class="text-sm text-gray-700">
+                            <span class="font-medium">{{ plan.nombre }}</span>
+                            <span class="text-gray-500 ml-2 font-mono">({{ plan.nombre_corto }})</span>
+                        </span>
+                    </label>
+                </div>
+                <div v-else class="text-sm text-gray-500 text-center py-4">
+                    No hay planes disponibles
+                </div>
+            </div>
+            <p class="text-sm text-gray-500 mt-2">
+                Selecciona los planes que estarán disponibles en esta sucursal
+            </p>
+        </div>
+
         <!-- Botones -->
         <div class="flex justify-end space-x-3 pt-6">
             <Link
@@ -165,6 +197,10 @@ const props = defineProps({
     isEdit: {
         type: Boolean,
         default: false
+    },
+    planesDisponibles: {
+        type: Array,
+        default: () => []
     }
 })
 

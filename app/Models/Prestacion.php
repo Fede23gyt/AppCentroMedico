@@ -18,13 +18,19 @@ class Prestacion extends Model
         'estado',
         'rubro_id',
         'precio_general',
+        'precio_afiliado',
         'valor_ips',
+        'val_ref',
+        'porc_ips',
         'observaciones'
     ];
 
     protected $casts = [
         'precio_general' => 'decimal:2',
+        'precio_afiliado' => 'decimal:2',
         'valor_ips' => 'decimal:2',
+        'val_ref' => 'decimal:2',
+        'porc_ips' => 'decimal:2',
         'estado' => 'string'
     ];
 

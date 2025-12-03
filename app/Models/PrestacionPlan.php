@@ -16,16 +16,16 @@ class PrestacionPlan extends Pivot
         'cant_max_individual',
         'cant_max_grupo',
         'estado',
-        'fecha_vigencia_desde',
-        'fecha_vigencia_hasta',
+        'fecha_desde',
+        'fecha_hasta',
         'observaciones'
     ];
 
     protected $casts = [
         'valor_afiliado' => 'decimal:2',
         'valor_particular' => 'decimal:2',
-        'fecha_vigencia_desde' => 'date',
-        'fecha_vigencia_hasta' => 'date',
+        'fecha_desde' => 'date',
+        'fecha_hasta' => 'date',
         'estado' => 'string'
     ];
 

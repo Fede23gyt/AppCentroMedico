@@ -7,7 +7,7 @@
             <div class="flex justify-between items-center mb-6">
                 <div>
                     <h1 class="text-2xl font-bold text-gray-900">Gestión de Planes</h1>
-                    <p class="text-gray-600">Administra los planes de salud del sistema</p>
+                    <p class="dark:text-gray-600">Administra los planes de salud del sistema</p>
                 </div>
                 <Link
                     :href="route('planes.create')"
@@ -73,118 +73,135 @@
             </div>
 
             <!-- Grid de planes -->
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+            <div class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 mb-8">
                 <div
                     v-for="plan in planes.data"
                     :key="plan.id"
                     class="bg-white rounded-lg shadow hover:shadow-md transition-shadow overflow-hidden"
                 >
-                    <!-- Header de la tarjeta -->
-                    <div class="p-6 pb-4">
-                        <div class="flex items-start justify-between">
-                            <div class="flex-1">
-                                <h3 class="text-lg font-semibold text-gray-900 mb-1">{{ plan.nombre }}</h3>
-                                <p class="text-sm text-gray-500 font-mono bg-gray-100 px-2 py-1 rounded inline-block">{{ plan.nombre_corto }}</p>
-                            </div>
-                            <span
-                                :class="[
-                                    'inline-flex px-2 py-1 text-xs font-semibold rounded-full',
-                                    getEstadoClass(plan.estado)
-                                ]"
-                            >
-                                {{ capitalizeFirst(plan.estado) }}
-                            </span>
-                        </div>
-                    </div>
-
-                    <!-- Información -->
-                    <div class="px-6 pb-4">
-                        <div class="space-y-2 text-sm text-gray-600">
-                            <!-- Vigencia -->
-                            <div class="flex items-center">
-                                <svg class="h-4 w-4 mr-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-                                </svg>
-                                <span>
-                                    Desde: {{ formatDate(plan.vigencia_desde) }}
-                                    <span v-if="plan.vigencia_hasta" class="block mt-1">
-                                        Hasta: {{ formatDate(plan.vigencia_hasta) }}
-                                    </span>
-                                    <span v-else class="text-green-600 font-medium block mt-1">
-                                        Sin vencimiento
-                                    </span>
+                    <!-- Contenido en 2 columnas -->
+                    <div class="flex">
+                        <!-- Columna de datos (3/4 del ancho) -->
+                        <div class="flex-1 p-6">
+                            <!-- Header con estado -->
+                            <div class="flex items-start justify-between mb-4">
+                                <div>
+                                    <h3 class="text-lg font-semibold text-gray-900 mb-1">{{ plan.nombre }}</h3>
+                                    <p class="text-sm text-gray-500 font-mono bg-gray-100 px-2 py-1 rounded inline-block">{{ plan.nombre_corto }}</p>
+                                </div>
+                                <span
+                                    :class="[
+                                        'inline-flex px-2 py-1 text-xs font-semibold rounded-full',
+                                        getEstadoClass(plan.estado)
+                                    ]"
+                                >
+                                    {{ capitalizeFirst(plan.estado) }}
                                 </span>
                             </div>
 
-                            <!-- Prestaciones -->
-                            <div class="flex items-center">
-                                <svg class="h-4 w-4 mr-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                                </svg>
-                                <span>{{ plan.prestaciones_count || 0 }} prestaciones</span>
-                            </div>
+                            <!-- Información principal -->
+                            <div class="space-y-3 text-sm text-gray-600">
+                                <!-- Vigencia -->
+                                <div class="flex items-start">
+                                    <svg class="h-4 w-4 mr-2 text-gray-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                                    </svg>
+                                    <div>
+                                        <div>Desde: {{ formatDate(plan.vigencia_desde) }}</div>
+                                        <div v-if="plan.vigencia_hasta" class="mt-1">
+                                            Hasta: {{ formatDate(plan.vigencia_hasta) }}
+                                        </div>
+                                        <div v-else class="text-green-600 font-medium mt-1">
+                                            Sin vencimiento
+                                        </div>
+                                    </div>
+                                </div>
 
-                            <!-- Descripción -->
-                            <div v-if="plan.descripcion" class="flex items-start">
-                                <svg class="h-4 w-4 mr-2 text-gray-400 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                                </svg>
-                                <span class="text-gray-500 text-xs leading-relaxed">{{ truncateText(plan.descripcion, 80) }}</span>
+                                <!-- Prestaciones -->
+                                <div class="flex items-center">
+                                    <svg class="h-4 w-4 mr-2 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                    </svg>
+                                    <span>{{ plan.prestaciones_count || 0 }} prestaciones asociadas</span>
+                                </div>
+
+                                <!-- Descripción -->
+                                <div v-if="plan.descripcion" class="flex items-start">
+                                    <svg class="h-4 w-4 mr-2 text-gray-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                    </svg>
+                                    <span class="text-gray-500 text-xs leading-relaxed">{{ truncateText(plan.descripcion, 100) }}</span>
+                                </div>
                             </div>
                         </div>
-                    </div>
 
-                    <!-- Acciones -->
-                    <div class="px-6 py-4 bg-gray-50 flex justify-between items-center">
-                        <Link
-                            :href="route('planes.show', plan.id)"
-                            class="text-blue-600 hover:text-blue-800 font-medium text-sm"
-                        >
-                            Ver detalles
-                        </Link>
-
-                        <div class="flex space-x-2">
+                        <!-- Columna de acciones (1/4 del ancho) -->
+                        <div class="w-16 bg-gray-50 border-l border-gray-200 flex flex-col items-center justify-center p-2 space-y-3">
+                            <!-- Ver detalles -->
                             <Link
-                                :href="route('prestaciones.planes', plan.id)"
-                                class="text-purple-600 hover:text-purple-800"
-                                title="Gestionar Prestaciones"
+                                :href="route('planes.show', plan.id)"
+                                class="p-2 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition-colors"
+                                title="Ver detalles"
+                                v-if="plan?.id"
                             >
-                                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                                </svg>
+                            </Link>
+
+                            <!-- Gestionar prestaciones -->
+                            <Link
+                                :href="route('planes.prestaciones.index', plan.id)"
+                                class="p-2 text-purple-600 hover:text-purple-800 hover:bg-purple-50 rounded-lg transition-colors"
+                                title="Gestionar Prestaciones"
+                                v-if="plan?.id"
+                            >
+                                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
                                 </svg>
                             </Link>
 
+                            <!-- Editar -->
                             <Link
                                 :href="route('planes.edit', plan.id)"
-                                class="text-gray-600 hover:text-gray-800"
+                                class="p-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors"
                                 title="Editar"
+                                v-if="plan?.id"
                             >
-                                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
                                 </svg>
                             </Link>
 
+                            <!-- Activar/Desactivar -->
                             <button
                                 @click="togglePlanStatus(plan)"
                                 :class="[
-                                    'hover:underline',
-                                    plan.estado === 'activo' ? 'text-orange-600 hover:text-orange-800' : 'text-green-600 hover:text-green-800'
+                                    'p-2 rounded-lg transition-opacity hover:opacity-80',
+                                    plan.estado === 'activo'
+                                        ? 'text-red-600 hover:text-red-700 hover:bg-red-250'
+                                        : 'text-green-600 hover:text-green-700 hover:bg-green-250'
                                 ]"
                                 :title="plan.estado === 'activo' ? 'Desactivar' : 'Activar'"
                             >
-                                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l4-4 4 4m0 6l-4 4-4-4"/>
+                                <svg v-if="plan.estado === 'activo'" class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/>
+                                </svg>
+                                <svg v-else class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                                 </svg>
                             </button>
 
+                            <!-- Eliminar -->
                             <button
                                 @click="confirmDelete(plan)"
-                                class="text-red-600 hover:text-red-800"
+                                class="p-2 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-lg transition-colors"
                                 title="Eliminar"
                                 :disabled="(plan.prestaciones_count || 0) > 0"
-                                :class="{ 'opacity-50 cursor-not-allowed': (plan.prestaciones_count || 0) > 0 }"
+                                :class="{ 'opacity-50 cursor-not-allowed hover:bg-transparent': (plan.prestaciones_count || 0) > 0 }"
                             >
-                                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
                                 </svg>
                             </button>
@@ -387,7 +404,7 @@ const confirmDelete = (plan) => {
 
 // Eliminar plan
 const deletePlan = () => {
-    if ((planToDelete.value?.prestaciones_count || 0) > 0) {
+    if ((planToDelete.value?.prestaciones_count || 0) > 0 || !planToDelete.value?.id) {
         return
     }
 
@@ -401,11 +418,17 @@ const deletePlan = () => {
 
 // Cambiar estado del plan
 const togglePlanStatus = (plan) => {
+    if (!plan?.id) return
+
     const nuevoEstado = plan.estado === 'activo' ? 'inactivo' : 'activo'
 
     router.patch(route('planes.update', plan.id), {
-        ...plan,
-        estado: nuevoEstado
+        nombre: plan.nombre,
+        nombre_corto: plan.nombre_corto,
+        vigencia_desde: plan.vigencia_desde,
+        vigencia_hasta: plan.vigencia_hasta,
+        estado: nuevoEstado,
+        descripcion: plan.descripcion
     }, {
         preserveScroll: true
     })

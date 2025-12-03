@@ -10,93 +10,73 @@ class RolePermissionSeeder extends Seeder
 {
     public function run(): void
     {
-        // Crear permisos
-        $permissions = [
-            // Usuarios
-            'users.view',
-            'users.create',
-            'users.edit',
-            'users.delete',
+        // Reset cached roles and permissions
+        app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
 
-            // Roles y Permisos
-            'roles.view',
-            'roles.create',
-            'roles.edit',
-            'roles.delete',
-
-            // Sucursales
-            'sucursales.view',
-            'sucursales.create',
-            'sucursales.edit',
-            'sucursales.delete',
-
-            // Ventas
-            'ventas.view',
-            'ventas.create',
-            'ventas.edit',
-            'ventas.delete',
-
-            // Productos
-            'productos.view',
-            'productos.create',
-            'productos.edit',
-            'productos.delete',
-
-            // Reportes
-            'reportes.ventas',
-            'reportes.usuarios',
-            'reportes.sucursales',
-
-            // Configuración
-            'config.view',
-            'config.edit',
+        // Definir todos los módulos y sus permisos
+        $modules = [
+            'dashboard' => ['view'],
+            'users' => ['view', 'create', 'edit', 'delete'],
+            'roles' => ['view', 'create', 'edit', 'delete', 'assign'],
+            'prestaciones' => ['view', 'create', 'edit', 'delete'],
+            'planes' => ['view', 'create', 'edit', 'delete'],
+            'rubros' => ['view', 'create', 'edit', 'delete'],
+            'sucursales' => ['view', 'create', 'edit', 'delete'],
+            'prestadores' => ['view', 'create', 'edit', 'delete'],
+            'cajas' => ['view', 'create', 'edit', 'delete', 'open', 'close'],
+            'ordenes' => ['view', 'create', 'edit', 'delete', 'anular', 'pdf'],
+            'rendiciones' => ['view', 'create', 'edit', 'delete', 'pdf'],
+            'reportes' => ['view', 'export'],
         ];
 
-        foreach ($permissions as $permission) {
-            Permission::firstOrCreate(['name' => $permission]);
+        // Crear permisos
+        foreach ($modules as $module => $actions) {
+            foreach ($actions as $action) {
+                Permission::firstOrCreate(['name' => "{$module}.{$action}"]);
+            }
         }
 
         // Crear roles
-        $adminRole = Role::firstOrCreate(['name' => 'administrador']);
-        $supervisorRole = Role::firstOrCreate(['name' => 'supervisor']);
-        $cajeroRole = Role::firstOrCreate(['name' => 'cajero']);
-        $vendedorRole = Role::firstOrCreate(['name' => 'vendedor']);
-        $administrativoRole = Role::firstOrCreate(['name' => 'administrativo']);
+        $adminRole = Role::firstOrCreate(['name' => 'Administrador']);
+        $supervisorRole = Role::firstOrCreate(['name' => 'Supervisor']);
+        $operadorRole = Role::firstOrCreate(['name' => 'Operador']);
 
-        // Asignar permisos a roles
+        // Limpiar permisos anteriores
+        $adminRole->permissions()->detach();
+        $supervisorRole->permissions()->detach();
+        $operadorRole->permissions()->detach();
+
+        // Administrador tiene todos los permisos
         $adminRole->givePermissionTo(Permission::all());
 
-        $supervisorRole->givePermissionTo([
-            'users.view',
-            'users.create',
-            'users.edit',
-            'ventas.view',
-            'ventas.create',
-            'ventas.edit',
-            'productos.view',
-            'productos.create',
-            'productos.edit',
-            'reportes.ventas',
-            'reportes.usuarios',
-        ]);
+        // Supervisor tiene permisos limitados (no puede eliminar usuarios ni roles)
+        $supervisorPermissions = Permission::whereNotIn('name', [
+            'users.delete',
+            'roles.delete',
+            'roles.create',
+            'roles.edit',
+            'sucursales.delete',
+        ])->get();
+        $supervisorRole->givePermissionTo($supervisorPermissions);
 
-        $cajeroRole->givePermissionTo([
-            'ventas.view',
-            'ventas.create',
-            'productos.view',
-        ]);
+        // Operador solo puede ver y crear órdenes y cajas
+        $operadorPermissions = Permission::whereIn('name', [
+            'dashboard.view',
+            'ordenes.view',
+            'ordenes.create',
+            'ordenes.pdf',
+            'cajas.view',
+            'cajas.create',
+            'cajas.open',
+            'cajas.close',
+            'prestaciones.view',
+            'prestadores.view',
+            'reportes.view',
+        ])->get();
+        $operadorRole->givePermissionTo($operadorPermissions);
 
-        $vendedorRole->givePermissionTo([
-            'ventas.view',
-            'ventas.create',
-            'productos.view',
-        ]);
-
-        $administrativoRole->givePermissionTo([
-            'users.view',
-            'ventas.view',
-            'productos.view',
-            'reportes.ventas',
-        ]);
+        $this->command->info('✓ Roles y permisos creados exitosamente!');
+        $this->command->info('✓ Roles creados: Administrador, Supervisor, Operador');
+        $this->command->info('✓ Total de permisos creados: ' . Permission::count());
     }
 }

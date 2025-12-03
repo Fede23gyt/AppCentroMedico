@@ -134,15 +134,15 @@
                 <!-- Información de la sucursal -->
                 <div class="lg:col-span-2 space-y-6">
                     <!-- Detalles de contacto -->
-                    <div class="bg-white p-6 rounded-lg shadow">
-                        <h3 class="text-lg font-medium text-gray-900 mb-4">Información de Contacto</h3>
+                    <div class="rounded-lg shadow-sm border border-gray-600 p-6" style="background-color: #2D6660;">
+                        <h3 class="text-lg font-medium text-white mb-4">Información de Contacto</h3>
                         <dl class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
-                                <dt class="text-sm font-medium text-gray-500">Código</dt>
-                                <dd class="text-sm text-gray-900 mt-1 font-mono">{{ sucursal.codigo }}</dd>
+                                <dt class="text-sm font-medium text-gray-200">Código</dt>
+                                <dd class="text-sm text-gray-900 mt-1 font-mono bg-white px-2 py-1 rounded inline-block">{{ sucursal.codigo }}</dd>
                             </div>
                             <div>
-                                <dt class="text-sm font-medium text-gray-500">Estado</dt>
+                                <dt class="text-sm font-medium text-gray-200">Estado</dt>
                                 <dd class="text-sm mt-1">
                   <span
                       :class="[
@@ -157,24 +157,92 @@
                                 </dd>
                             </div>
                             <div class="sm:col-span-2">
-                                <dt class="text-sm font-medium text-gray-500">Dirección</dt>
-                                <dd class="text-sm text-gray-900 mt-1">{{ sucursal.direccion }}</dd>
+                                <dt class="text-sm font-medium text-gray-200">Dirección</dt>
+                                <dd class="text-sm text-white mt-1">{{ sucursal.direccion }}</dd>
                             </div>
                             <div v-if="sucursal.telefono">
-                                <dt class="text-sm font-medium text-gray-500">Teléfono</dt>
-                                <dd class="text-sm text-gray-900 mt-1">{{ sucursal.telefono }}</dd>
+                                <dt class="text-sm font-medium text-gray-200">Teléfono</dt>
+                                <dd class="text-sm text-white mt-1">{{ sucursal.telefono }}</dd>
                             </div>
                             <div v-if="sucursal.email">
-                                <dt class="text-sm font-medium text-gray-500">Email</dt>
-                                <dd class="text-sm text-gray-900 mt-1">{{ sucursal.email }}</dd>
+                                <dt class="text-sm font-medium text-gray-200">Email</dt>
+                                <dd class="text-sm text-white mt-1">{{ sucursal.email }}</dd>
                             </div>
                         </dl>
                     </div>
 
+                    <!-- Planes Asignados -->
+                    <div class="rounded-lg shadow-sm border border-gray-600" style="background-color: #2D6660;">
+                        <div class="px-6 py-4 border-b border-gray-400">
+                            <div class="flex justify-between items-center">
+                                <h3 class="text-lg font-medium text-white">Planes de Salud Asignados</h3>
+                                <Link
+                                    :href="route('sucursales.edit', sucursal.id)"
+                                    class="text-sm text-blue-200 hover:text-blue-100"
+                                >
+                                    Gestionar Planes
+                                </Link>
+                            </div>
+                        </div>
+                        <div class="p-6">
+                            <div class="bg-white rounded-lg p-4 border-2 border-gray-300">
+                                <div v-if="sucursal.planes && sucursal.planes.length > 0">
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div
+                                            v-for="plan in sucursal.planes"
+                                            :key="plan.id"
+                                            class="border border-gray-200 rounded-lg p-4 hover:border-blue-300 hover:shadow-md transition-all"
+                                        >
+                                            <div class="flex items-start justify-between">
+                                                <div class="flex-1">
+                                                    <h4 class="font-medium text-gray-900">{{ plan.nombre }}</h4>
+                                                    <p class="text-sm text-gray-500 mt-1 font-mono">{{ plan.nombre_corto }}</p>
+                                                    <div v-if="plan.pivot" class="mt-2 space-y-1">
+                                                        <div v-if="plan.pivot.fecha_desde" class="flex items-center text-xs text-gray-500">
+                                                            <svg class="h-3 w-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                                                            </svg>
+                                                            Desde: {{ formatDate(plan.pivot.fecha_desde) }}
+                                                        </div>
+                                                        <span
+                                                            :class="[
+                                                                'inline-flex px-2 py-0.5 text-xs font-semibold rounded-full',
+                                                                plan.pivot.estado === 'activo'
+                                                                    ? 'bg-green-100 text-green-800'
+                                                                    : 'bg-red-100 text-red-800'
+                                                            ]"
+                                                        >
+                                                            {{ plan.pivot.estado === 'activo' ? 'Activo' : 'Inactivo' }}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                                <Link
+                                                    :href="route('planes.show', plan.id)"
+                                                    class="text-blue-600 hover:text-blue-800 ml-2"
+                                                >
+                                                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
+                                                    </svg>
+                                                </Link>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div v-else class="text-center py-8">
+                                    <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                    </svg>
+                                    <p class="mt-2 text-sm text-gray-500">Esta sucursal no tiene planes asignados</p>
+                                    <p class="text-xs text-gray-400 mt-1">Haz clic en "Gestionar Planes" para asignar planes</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Lista de usuarios -->
-                    <div class="bg-white rounded-lg shadow">
-                        <div class="px-6 py-4 border-b border-gray-200">
-                            <h3 class="text-lg font-medium text-gray-900">Usuarios Asignados</h3>
+                    <div class="rounded-lg shadow-sm border border-gray-600" style="background-color: #2D6660;">
+                        <div class="px-6 py-4 border-b border-gray-400">
+                            <h3 class="text-lg font-medium text-white">Usuarios Asignados</h3>
                         </div>
                         <div v-if="sucursal.users.length > 0" class="divide-y divide-gray-200">
                             <div

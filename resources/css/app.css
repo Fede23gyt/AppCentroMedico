@@ -1,3 +1,338 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Estilos personalizados para el menú mejorado */
+.bg-gray-850 {
+    background-color: #4f6f6d; /* Verde azulado oscuro personalizado */
+}
+
+/* Indicadores visuales para submenús */
+.submenu-indicator {
+    position: relative;
+}
+
+.submenu-indicator::before {
+    content: '→';
+    position: absolute;
+    left: -12px;
+    color: #ffffff;
+    font-size: 12px;
+}
+
+/* Animaciones suaves para expansión */
+.menu-transition {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Ajustes para tema verde con títulos blancos */
+/* Títulos principales sobre fondo verde azulado deben ser blancos */
+.bg-custom-teal-600 h1:not(.bg-white h1):not(.bg-white *),
+.bg-custom-teal-600 h2:not(.bg-white h2):not(.bg-white *),
+.bg-custom-teal-700 h1,
+.bg-custom-teal-700 h2,
+.bg-custom-teal-800 h1,
+.bg-custom-teal-800 h2 {
+    color: white !important;
+}
+
+/* Textos y párrafos sobre fondo verde azulado */
+/* NO aplicar a elementos dentro de bg-white */
+.bg-custom-teal-600 > p,
+.bg-custom-teal-600 > div > p {
+    color: white !important;
+}
+
+/* Asegurar que elementos dentro de bg-white no sean blancos */
+.bg-white div:not([class*="text-white"]),
+.bg-white span:not([class*="text-white"]) {
+    color: #1f2937;
+}
+
+/* Elementos con bg-green deben tener texto oscuro a menos que especifiquen text-white */
+.bg-green-100 div:not(.text-white),
+.bg-green-200 div:not(.text-white),
+.bg-green-100 span:not(.text-white),
+.bg-green-200 span:not(.text-white) {
+    color: #1f2937 !important;
+}
+
+/* Forzar específicamente las clases de texto */
+.bg-green-100 .text-gray-900,
+.bg-green-200 .text-gray-900,
+.bg-green-100 .text-gray-600,
+.bg-green-200 .text-gray-600 {
+    color: inherit !important;
+}
+
+/* Textos dentro de CardBox y elementos con fondo blanco */
+/* Solo aplicar a elementos que NO tienen clases de color específicas */
+.bg-white h1:not([class*="text-"]),
+.bg-white h2:not([class*="text-"]),
+.bg-white h3:not([class*="text-"]),
+.bg-white h4:not([class*="text-"]),
+.bg-white h5:not([class*="text-"]),
+.bg-white h6:not([class*="text-"]) {
+    color: #1f2937 !important;
+}
+
+.bg-white label:not([class*="text-"]) {
+    color: #374151 !important;
+}
+
+/* Headers de tabla con fondo oscuro deben tener texto blanco */
+.bg-gray-700 th,
+.bg-gray-800 th,
+.bg-gray-900 th,
+thead.bg-gray-700,
+thead.bg-gray-800,
+thead.bg-gray-900 {
+    color: white !important;
+}
+
+/* Celdas de tabla sin clase de color específica */
+.bg-white td:not([class*="text-"]) {
+    color: #1f2937;
+}
+
+/* Solo los CardBox con fondo teal tienen texto blanco */
+.bg-custom-teal-500 {
+    color: white;
+}
+
+.bg-custom-teal-500 h1,
+.bg-custom-teal-500 h2,
+.bg-custom-teal-500 h3 {
+    color: white !important;
+}
+
+/* Asegurar visibilidad de iconos en navbar y menú lateral */
+/* Solo aplicar a SVG que son hijos directos o están en nav/aside */
+nav.bg-custom-teal-600 svg,
+nav.bg-custom-teal-700 svg,
+nav.bg-custom-teal-800 svg,
+aside .bg-custom-teal-700 svg,
+aside .bg-custom-teal-800 svg,
+.bg-custom-teal-600 > * > svg,
+.bg-custom-teal-700 > * > svg {
+    color: white !important;
+}
+
+/* Botones en navbar visibles */
+/* Solo aplicar a botones en nav, no a todos los botones */
+nav.bg-custom-teal-600 button,
+nav.bg-custom-teal-700 button,
+nav.bg-custom-teal-800 button,
+aside button {
+    color: white !important;
+}
+
+/* Botones con clases de color específicas mantienen su color */
+button[class*="text-red-"],
+button[class*="text-green-"],
+button[class*="text-blue-"],
+button[class*="text-purple-"],
+button[class*="text-gray-"],
+button[class*="text-yellow-"],
+button[class*="text-orange-"],
+button[class*="text-indigo-"] {
+    /* Dejar que Tailwind maneje el color */
+}
+
+/* Asegurar que botones en áreas blancas respeten sus clases de color */
+.bg-white button.text-red-600,
+.bg-white button.text-green-600,
+.bg-white button.text-blue-600,
+.bg-white button.text-purple-600,
+.bg-white button.text-gray-600,
+.bg-gray-50 button.text-red-600,
+.bg-gray-50 button.text-green-600,
+.bg-gray-50 button.text-blue-600,
+.bg-gray-50 button.text-purple-600,
+.bg-gray-50 button.text-gray-600 {
+    /* Estos selectores específicos tienen mayor prioridad */
+}
+
+/* Forzar colores en botones de acciones */
+button.text-red-600,
+button.text-red-700,
+button.text-red-800 {
+    color: #dc2626 !important;
+}
+
+button.text-green-600,
+button.text-green-700,
+button.text-green-800 {
+    color: #16a34a !important;
+}
+
+button.text-blue-600,
+button.text-blue-700,
+button.text-blue-800 {
+    color: #2563eb !important;
+}
+
+button.text-purple-600,
+button.text-purple-700,
+button.text-purple-800 {
+    color: #9333ea !important;
+}
+
+button.text-gray-600,
+button.text-gray-700,
+button.text-gray-800 {
+    color: #4b5563 !important;
+}
+
+/* SVG dentro de botones deben heredar el color del botón */
+button.text-red-600 svg,
+button.text-red-700 svg,
+button.text-red-800 svg {
+    color: #dc2626 !important;
+}
+
+button.text-green-600 svg,
+button.text-green-700 svg,
+button.text-green-800 svg {
+    color: #16a34a !important;
+}
+
+button.text-blue-600 svg,
+button.text-blue-700 svg,
+button.text-blue-800 svg {
+    color: #2563eb !important;
+}
+
+button.text-purple-600 svg,
+button.text-purple-700 svg,
+button.text-purple-800 svg {
+    color: #9333ea !important;
+}
+
+button.text-gray-600 svg,
+button.text-gray-700 svg,
+button.text-gray-800 svg {
+    color: #4b5563 !important;
+}
+
+/* Links y elementos interactivos en menú lateral */
+.bg-custom-teal-700 a,
+.bg-custom-teal-800 a,
+.bg-custom-teal-900 a {
+    color: white !important;
+}
+
+/* Asegurar que los inputs y selects tengan texto oscuro */
+/* Forzar texto oscuro en todos los inputs, selects y textareas */
+input,
+select,
+textarea {
+    color: #1f2937 !important;
+}
+
+/* Opciones dentro de select también oscuras */
+option {
+    color: #1f2937 !important;
+    background-color: white !important;
+}
+
+/* Placeholders de inputs */
+input::placeholder,
+select::placeholder,
+textarea::placeholder {
+    color: #9ca3af !important;
+}
+
+/* Forzar colores correctos en elementos con clases de texto Tailwind */
+/* Estos deben tener máxima prioridad */
+.text-gray-900,
+div.text-gray-900,
+span.text-gray-900 {
+    color: #111827 !important;
+}
+
+.text-gray-800,
+div.text-gray-800,
+span.text-gray-800 {
+    color: #1f2937 !important;
+}
+
+.text-gray-700,
+div.text-gray-700,
+span.text-gray-700 {
+    color: #374151 !important;
+}
+
+.text-gray-600,
+div.text-gray-600,
+span.text-gray-600 {
+    color: #4b5563 !important;
+}
+
+.text-gray-500,
+div.text-gray-500,
+span.text-gray-500 {
+    color: #6b7280 !important;
+}
+
+.text-green-900 { color: #14532d !important; }
+.text-green-800 { color: #166534 !important; }
+.text-green-700 { color: #15803d !important; }
+.text-green-600 { color: #16a34a !important; }
+.text-blue-600 { color: #2563eb !important; }
+.text-blue-700 { color: #1d4ed8 !important; }
+.text-blue-800 { color: #1e40af !important; }
+.text-purple-600 { color: #9333ea !important; }
+.text-indigo-800 { color: #3730a3 !important; }
+
+/* Mantener colores de fondo de badges */
+[class*="bg-green-"],
+[class*="bg-blue-"],
+[class*="bg-red-"],
+[class*="bg-yellow-"],
+[class*="bg-purple-"],
+[class*="bg-indigo-"],
+[class*="bg-pink-"],
+[class*="bg-orange-"],
+[class*="bg-gray-"] {
+    /* Permitir que Tailwind maneje estos colores */
+}
+
+/* SVG dentro de elementos con clases de color deben heredar ese color */
+.text-blue-600 svg,
+.text-blue-700 svg,
+.text-blue-800 svg,
+.text-purple-600 svg,
+.text-purple-700 svg,
+.text-purple-800 svg,
+.text-gray-600 svg,
+.text-gray-700 svg,
+.text-gray-800 svg,
+.text-red-600 svg,
+.text-red-700 svg,
+.text-red-800 svg,
+.text-green-600 svg,
+.text-green-700 svg,
+.text-green-800 svg,
+.text-yellow-600 svg,
+.text-orange-600 svg,
+.text-indigo-600 svg {
+    color: inherit;
+}
+
+/* Asegurar que stroke de SVG use currentColor correctamente */
+.bg-white svg,
+.bg-gray-50 svg,
+.bg-gray-100 svg {
+    color: inherit !important;
+}
+
+/* Links y botones en áreas blancas mantienen sus colores de SVG */
+.bg-white a svg,
+.bg-white button svg,
+.bg-gray-50 a svg,
+.bg-gray-50 button svg,
+.bg-gray-100 a svg,
+.bg-gray-100 button svg {
+    color: inherit !important;
+}

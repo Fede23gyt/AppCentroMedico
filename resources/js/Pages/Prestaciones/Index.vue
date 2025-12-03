@@ -6,8 +6,8 @@
             <!-- Header -->
             <div class="flex justify-between items-center mb-6">
                 <div>
-                    <h1 class="text-2xl font-bold text-gray-900">Gestión de Prestaciones</h1>
-                    <p class="text-gray-600">Administra las prestaciones médicas del sistema</p>
+                    <h1 class="text-2xl font-bold text-gray-200">Gestión de Prestaciones</h1>
+                    <p class="text-gray-200">Administra las prestaciones médicas del sistema</p>
                 </div>
                 <Link
                     :href="route('prestaciones.create')"
@@ -66,7 +66,7 @@
                     <div class="flex items-end">
                         <button
                             @click="clearFilters"
-                            class="w-full px-3 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+                            class="w-full px-3 py-2 text-gray-600 border border-gray-300 bg-blue-300 rounded-md hover:bg-gray-150 transition-colors"
                         >
                             Limpiar Filtros
                         </button>
@@ -91,24 +91,27 @@
             <div class="bg-white shadow overflow-hidden rounded-lg">
                 <div class="overflow-x-auto">
                     <table class="min-w-full divide-y divide-gray-200">
-                        <thead class="bg-gray-50">
+                        <thead class="bg-gray-700">
                             <tr>
-                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">
                                     Código
                                 </th>
-                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-200 uppercase tracking-wider">
                                     Nombre
                                 </th>
-                                <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-gray-200 uppercase tracking-wider">
                                     Estado
                                 </th>
-                                <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Precio General
+                                <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-gray-200 uppercase tracking-wider">
+                                    Valor Ref
                                 </th>
-                                <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-gray-200 uppercase tracking-wider">
+                                    % IPS
+                                </th>
+                                <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-gray-200 uppercase tracking-wider">
                                     Planes
                                 </th>
-                                <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-gray-200 uppercase tracking-wider">
                                     Opciones
                                 </th>
                             </tr>
@@ -162,14 +165,18 @@
                                     </span>
                                 </td>
 
-                                <!-- Columna Precio General -->
+                                <!-- Columna Valor Referencia -->
                                 <td class="px-6 py-4 whitespace-nowrap text-center">
                                     <div class="text-sm font-semibold text-gray-900">
-                                        {{ formatCurrency(prestacion.precio_general) }}
+                                        {{ formatCurrency(prestacion.val_ref || 0) }}
                                     </div>
-                                    <!-- <div v-if="prestacion.valor_ips" class="text-xs text-gray-500">
-                                        IPS: {{ formatCurrency(prestacion.valor_ips) }}
-                                    </div> -->
+                                </td>
+
+                                <!-- Columna Porcentaje IPS -->
+                                <td class="px-6 py-4 whitespace-nowrap text-center">
+                                    <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold bg-purple-100 text-purple-800">
+                                        {{ prestacion.porc_ips || 0 }}%
+                                    </span>
                                 </td>
 
                                 <!-- Columna Planes -->
@@ -220,15 +227,18 @@
                                         <button
                                             @click="togglePrestacionStatus(prestacion)"
                                             :class="[
-                                                'hover:underline',
+                                                'hover:opacity-80 transition-opacity',
                                                 prestacion.estado === 'activo'
-                                                    ? 'text-orange-600 hover:text-orange-800'
-                                                    : 'text-green-600 hover:text-green-800'
+                                                    ? 'text-red-600 hover:text-red-700'
+                                                    : 'text-green-600 hover:text-green-700'
                                             ]"
                                             :title="prestacion.estado === 'activo' ? 'Desactivar' : 'Activar'"
                                         >
-                                            <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l4-4 4 4m0 6l-4 4-4-4"/>
+                                            <svg v-if="prestacion.estado === 'activo'" class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/>
+                                            </svg>
+                                            <svg v-else class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                                             </svg>
                                         </button>
 

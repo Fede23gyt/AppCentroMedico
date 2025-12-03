@@ -16,6 +16,20 @@ module.exports = {
             gray: 'gray'
         },
         extend: {
+            colors: {
+                'custom-teal': {
+                    50: '#f7faf9',
+                    100: '#EBF5F5',
+                    200: '#e1ebe8',
+                    300: '#D3E0DD',
+                    400: '#b3c9c4',
+                    500: '#93b2ab',
+                    600: '#748e89',
+                    700: '#5a6f6b',
+                    800: '#41504d',
+                    900: '#28302f',
+                },
+            },
             zIndex: {
                 '-1': '-1'
             },

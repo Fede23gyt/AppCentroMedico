@@ -67,6 +67,7 @@
             <SucursalForm
                 :form="form"
                 :is-edit="true"
+                :planes-disponibles="planesDisponibles"
                 @submit="submit"
             />
         </div>
@@ -83,6 +84,10 @@ const props = defineProps({
     sucursal: {
         type: Object,
         required: true
+    },
+    planesDisponibles: {
+        type: Array,
+        default: () => []
     }
 })
 
@@ -93,6 +98,7 @@ const form = useForm({
     telefono: props.sucursal.telefono || '',
     email: props.sucursal.email || '',
     is_active: props.sucursal.is_active,
+    planes: props.sucursal.planes?.map(p => p.id) || [],
 })
 
 const hasErrors = computed(() => {

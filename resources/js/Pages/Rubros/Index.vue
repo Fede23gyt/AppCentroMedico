@@ -7,7 +7,7 @@
             <div class="flex justify-between items-center mb-6">
                 <div>
                     <h1 class="text-2xl font-bold text-gray-900">Gestión de Rubros</h1>
-                    <p class="text-gray-600">Administra las categorías de prestaciones médicas</p>
+                    <p class="dark:text-gray-600">Administra los rubros de prestaciones médicas</p>
                 </div>
                 <Link
                     :href="route('rubros.create')"
@@ -84,6 +84,9 @@
                                 Descripción
                             </th>
                             <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                % Desc
+                            </th>
+                            <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                                 Prestaciones
                             </th>
                             <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -129,6 +132,13 @@
                                     </p>
                                     <span v-else class="text-gray-400 italic">Sin descripción</span>
                                 </div>
+                            </td>
+
+                            <!-- Columna Porcentaje IPS -->
+                            <td class="px-6 py-4 whitespace-nowrap text-center">
+                                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold bg-purple-100 text-purple-800">
+                                    {{ rubro.porc || 0 }}%
+                                </span>
                             </td>
 
                             <!-- Columna Prestaciones -->

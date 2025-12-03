@@ -38,6 +38,7 @@ class RubroController extends Controller
         $validated = $request->validate([
             'nombre' => 'required|string|max:100|unique:rubros',
             'descripcion' => 'nullable|string',
+            'porc' => 'required|numeric|min:0|max:100',
             'estado' => 'required|in:activo,inactivo'
         ]);
 
@@ -59,6 +60,7 @@ class RubroController extends Controller
         $validated = $request->validate([
             'nombre' => 'required|string|max:100|unique:rubros,nombre,' . $rubro->id,
             'descripcion' => 'nullable|string',
+            'porc' => 'required|numeric|min:0|max:100',
             'estado' => 'required|in:activo,inactivo'
         ]);
 

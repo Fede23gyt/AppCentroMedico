@@ -1,7 +1,5 @@
 import {
     mdiAccount,
-    mdiCogOutline,
-    mdiEmail,
     mdiLogout,
     mdiThemeLightDark
 } from '@mdi/js'
@@ -14,16 +12,6 @@ export default [
                 icon: mdiAccount,
                 label: 'Mi Perfil',
                 to: '/profile'
-            },
-            {
-                icon: mdiCogOutline,
-                label: 'Configuración',
-                to: '/settings'
-            },
-            {
-                icon: mdiEmail,
-                label: 'Mensajes',
-                to: '/messages'
             },
             {
                 isDivider: true

@@ -1,354 +1,250 @@
-<!-- resources/js/Pages/Prestaciones/Show.vue -->
 <template>
+    <Head :title="`Prestación: ${prestacion?.codigo} - ${prestacion?.nombre}`" />
+
     <AuthenticatedLayout>
-        <Head :title="`Prestación #${prestacion.codigo} - ${prestacion.nombre}`" />
-
-        <SectionMain>
-            <SectionTitleLineWithButton
-                :icon="mdiMedicalBag"
-                :title="`Prestación #${prestacion.codigo}`"
-                main
-            >
-                <div class="flex gap-2">
-                    <BaseButton
-                        :route-name="route('prestaciones.edit', prestacion.id)"
-                        :icon="mdiPencil"
-                        label="Editar"
-                        color="success"
-                        rounded-full
-                        small
-                    />
-                    <BaseButton
-                        :route-name="route('prestaciones.index')"
-                        :icon="mdiArrowLeft"
-                        label="Volver"
-                        color="contrast"
-                        rounded-full
-                        small
-                    />
+        <div v-if="prestacion" class="max-w-4xl mx-auto px-4 py-6">
+            <!-- Header -->
+            <div class="flex justify-between items-center mb-6">
+                <div>
+                    <div class="flex items-center space-x-3 mb-2">
+                        <Link
+                            :href="route('prestaciones.index')"
+                            class="text-gray-600 hover:text-gray-800"
+                        >
+                            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                            </svg>
+                        </Link>
+                        <h1 class="text-2xl font-bold text-gray-900">Detalle de Prestación</h1>
+                        <span
+                            :class="[
+                                'inline-flex px-2 py-1 text-xs font-semibold rounded-full',
+                                getEstadoClass(prestacion.estado)
+                            ]"
+                        >
+                            {{ capitalizeFirst(prestacion.estado) }}
+                        </span>
+                    </div>
+                    <p class="text-gray-600">Información completa de la prestación médica</p>
                 </div>
-            </SectionTitleLineWithButton>
-
-            <!-- Estado y acciones rápidas -->
-            <div class="mb-6 flex flex-wrap items-center justify-between gap-4">
-                <div class="flex items-center gap-4">
-                    <span :class="getEstadoBadgeClass(prestacion.estado)"
-                          class="px-3 py-1 rounded-full text-sm font-medium">
-                        {{ getEstadoLabel(prestacion.estado) }}
-                    </span>
-                    <span class="text-sm text-gray-600 dark:text-gray-400">
-                        Rubro: {{ prestacion.rubro?.nombre || 'Sin rubro' }}
-                    </span>
-                </div>
-
-                <!-- Acciones rápidas -->
-                <div class="flex gap-2">
-                    <BaseButton
-                        @click="copyToClipboard"
-                        :icon="mdiContentCopy"
-                        color="info"
-                        outline
-                        small
-                        label="Copiar"
-                    />
-                    <BaseButton
-                        @click="showDeleteModal = true"
-                        :icon="mdiDelete"
-                        color="danger"
-                        outline
-                        small
-                        label="Eliminar"
-                    />
+                <div class="flex space-x-3">
+                    <Link
+                        :href="route('prestaciones.index')"
+                        class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-md font-medium transition-colors"
+                    >
+                        Volver
+                    </Link>
                 </div>
             </div>
 
-            <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
-                <!-- Información Principal -->
-                <div class="xl:col-span-2 space-y-6">
-                    <!-- Datos básicos -->
-                    <CardBox>
-                        <div class="flex items-center gap-3 p-6 border-b border-gray-200 dark:border-gray-700">
-                            <Icon :path="mdiInformation" class="w-6 h-6 text-blue-500" />
-                            <h3 class="text-xl font-semibold text-gray-800 dark:text-white">
-                                {{ prestacion.nombre }}
-                            </h3>
-                        </div>
+            <!-- Mensajes -->
+            <div v-if="$page.props.flash?.success" class="mb-6">
+                <div class="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-md">
+                    {{ $page.props.flash.success }}
+                </div>
+            </div>
 
-                        <div class="p-6 space-y-4">
-                            <div v-if="prestacion.descripcion" class="prose dark:prose-invert max-w-none">
-                                <p class="text-gray-600 dark:text-gray-400 leading-relaxed">
-                                    {{ prestacion.descripcion }}
-                                </p>
-                            </div>
+            <div v-if="$page.props.flash?.error" class="mb-6">
+                <div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md">
+                    {{ $page.props.flash.error }}
+                </div>
+            </div>
 
-                            <div v-else class="text-gray-500 dark:text-gray-500 italic">
-                                Sin descripción disponible
-                            </div>
+            <!-- Información Unificada -->
+            <div class="rounded-lg shadow-sm border border-gray-600 p-8" style="background-color: #2D6660;">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <!-- Columna Izquierda -->
+                    <div class="space-y-6">
+                        <div>
+                            <h3 class="text-lg font-semibold text-white mb-4">Información Básica</h3>
 
-                            <!-- Detalles técnicos -->
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-                                <div class="flex items-center gap-3">
-                                    <span class="text-sm font-medium text-gray-700 dark:text-gray-300 w-20">Código:</span>
-                                    <span class="font-mono text-sm bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">
+                            <div class="space-y-4">
+                                <div>
+                                    <dt class="text-sm font-medium text-gray-200">Código</dt>
+                                    <dd class="mt-1 text-sm text-gray-900 font-mono bg-white px-3 py-1 rounded inline-block">
                                         {{ prestacion.codigo }}
-                                    </span>
+                                    </dd>
                                 </div>
 
-                                <div class="flex items-center gap-3">
-                                    <span class="text-sm font-medium text-gray-700 dark:text-gray-300 w-20">Rubro:</span>
-                                    <span class="text-sm text-gray-600 dark:text-gray-400">
-                                        {{ prestacion.rubro?.nombre || 'Sin asignar' }}
-                                    </span>
+                                <div>
+                                    <dt class="text-sm font-medium text-gray-200">Nombre</dt>
+                                    <dd class="mt-1 text-sm text-white font-semibold">
+                                        {{ prestacion.nombre }}
+                                    </dd>
+                                </div>
+
+                                <div>
+                                    <dt class="text-sm font-medium text-gray-200">Rubro</dt>
+                                    <dd class="mt-1">
+                                        <span class="inline-flex px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">
+                                            {{ prestacion.rubro?.nombre || 'Sin rubro' }}
+                                        </span>
+                                    </dd>
+                                </div>
+
+                                <div>
+                                    <dt class="text-sm font-medium text-gray-200">Estado</dt>
+                                    <dd class="mt-1">
+                                        <span
+                                            :class="[
+                                                'inline-flex px-2 py-1 text-xs font-semibold rounded-full',
+                                                getEstadoClass(prestacion.estado)
+                                            ]"
+                                        >
+                                            {{ capitalizeFirst(prestacion.estado) }}
+                                        </span>
+                                    </dd>
                                 </div>
                             </div>
                         </div>
-                    </CardBox>
 
-                    <!-- Observaciones -->
-                    <CardBox v-if="prestacion.observaciones">
-                        <div class="flex items-center gap-3 p-6 border-b border-gray-200 dark:border-gray-700">
-                            <Icon :path="mdiNoteText" class="w-6 h-6 text-orange-500" />
-                            <h3 class="text-lg font-semibold text-gray-800 dark:text-white">
-                                Observaciones
-                            </h3>
+                        <div v-if="prestacion.descripcion">
+                            <dt class="text-sm font-medium text-gray-200 mb-2">Descripción</dt>
+                            <dd class="text-sm text-gray-900 bg-white p-3 rounded">
+                                {{ prestacion.descripcion }}
+                            </dd>
+                        </div>
+                    </div>
+
+                    <!-- Columna Derecha -->
+                    <div class="space-y-6">
+                        <div>
+                            <h3 class="text-lg font-semibold text-white mb-4">Información Económica</h3>
+
+                            <div class="bg-white rounded-lg p-4 border-2 border-gray-300">
+                                <div class="space-y-4">
+                                    <!-- Valor IPS y Porcentaje IPS en la misma fila -->
+                                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                        <div>
+                                            <dt class="text-sm font-medium text-gray-500">Valor IPS</dt>
+                                            <dd class="mt-1 text-lg font-bold text-green-600">
+                                                ${{ formatCurrency(prestacion.valor_ips || 0) }}
+                                            </dd>
+                                        </div>
+
+                                        <div>
+                                            <dt class="text-sm font-medium text-gray-500">Porcentaje IPS</dt>
+                                            <dd class="mt-1 text-lg font-bold text-purple-600">
+                                                {{ prestacion.porc_ips || 0 }}%
+                                            </dd>
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                      <dt class="text-sm font-medium text-gray-500">Valor Referencia</dt>
+                                      <dd class="mt-1 text-lg font-bold text-blue-600">
+                                        ${{ formatCurrency(prestacion.val_ref || 0) }}
+                                      </dd>
+                                    </div>
+
+                                    <div v-if="prestacion.uvr">
+                                        <dt class="text-sm font-medium text-gray-500">UVR</dt>
+                                        <dd class="mt-1 text-sm text-gray-900">
+                                            {{ prestacion.uvr }}
+                                        </dd>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
 
-                        <div class="p-6">
-                            <p class="text-gray-600 dark:text-gray-400 leading-relaxed">
+                        <div>
+                            <h3 class="text-lg font-semibold text-white mb-4">Información Adicional</h3>
+
+                            <div class="space-y-4">
+                                <div>
+                                    <dt class="text-sm font-medium text-gray-200">Creado</dt>
+                                    <dd class="mt-1 text-sm text-white">
+                                        {{ formatDate(prestacion.created_at) }}
+                                    </dd>
+                                </div>
+
+                                <div>
+                                    <dt class="text-sm font-medium text-gray-200">Última modificación</dt>
+                                    <dd class="mt-1 text-sm text-white">
+                                        {{ formatDate(prestacion.updated_at) }}
+                                    </dd>
+                                </div>
+
+                                <div>
+                                    <dt class="text-sm font-medium text-gray-200">Planes asociados</dt>
+                                    <dd class="mt-1 text-sm">
+                                        <span class="inline-flex px-2 py-1 bg-purple-100 text-purple-800 rounded-full text-xs font-medium">
+                                            {{ planesAsociadosCount }} plan(es)
+                                        </span>
+                                    </dd>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div v-if="prestacion.observaciones">
+                            <dt class="text-sm font-medium text-gray-200 mb-2">Observaciones</dt>
+                            <dd class="text-sm text-gray-900 bg-white p-3 rounded">
                                 {{ prestacion.observaciones }}
-                            </p>
+                            </dd>
                         </div>
-                    </CardBox>
-                </div>
-
-                <!-- Panel Lateral -->
-                <div class="space-y-6">
-                    <!-- Precios -->
-                    <CardBox>
-                        <div class="flex items-center gap-3 p-6 border-b border-gray-200 dark:border-gray-700">
-                            <Icon :path="mdiCurrencyUsd" class="w-6 h-6 text-green-500" />
-                            <h3 class="text-lg font-semibold text-gray-800 dark:text-white">
-                                Precios
-                            </h3>
-                        </div>
-
-                        <div class="p-6 space-y-4">
-                            <!-- Precio General -->
-                            <div class="flex items-center justify-between">
-                                <span class="text-sm font-medium text-gray-700 dark:text-gray-300">
-                                    Precio General
-                                </span>
-                                <span class="text-lg font-bold text-gray-900 dark:text-white">
-                                    ${{ formatCurrency(prestacion.precio_general) }}
-                                </span>
-                            </div>
-
-                            <!-- Valor IPS -->
-                            <div v-if="prestacion.valor_ips" class="flex items-center justify-between pt-2 border-t border-gray-200 dark:border-gray-700">
-                                <span class="text-sm font-medium text-gray-700 dark:text-gray-300">
-                                    Valor IPS
-                                </span>
-                                <span class="text-lg font-bold text-blue-600 dark:text-blue-400">
-                                    ${{ formatCurrency(prestacion.valor_ips) }}
-                                </span>
-                            </div>
-
-                            <!-- Diferencia de precios -->
-                            <div v-if="prestacion.valor_ips && prestacion.precio_general !== prestacion.valor_ips"
-                                 class="text-xs text-gray-500 dark:text-gray-400 pt-2 border-t border-gray-200 dark:border-gray-700">
-                                <span v-if="prestacion.valor_ips < prestacion.precio_general">
-                                    IPS: ${{ formatCurrency(prestacion.precio_general - prestacion.valor_ips) }} menos
-                                </span>
-                                <span v-else>
-                                    IPS: ${{ formatCurrency(prestacion.valor_ips - prestacion.precio_general) }} más
-                                </span>
-                            </div>
-                        </div>
-                    </CardBox>
-
-                    <!-- Información del Sistema -->
-                    <CardBox>
-                        <div class="flex items-center gap-3 p-6 border-b border-gray-200 dark:border-gray-700">
-                            <Icon :path="mdiClockOutline" class="w-6 h-6 text-gray-500" />
-                            <h3 class="text-lg font-semibold text-gray-800 dark:text-white">
-                                Información del Sistema
-                            </h3>
-                        </div>
-
-                        <div class="p-6 space-y-3 text-sm">
-                            <div class="flex justify-between">
-                                <span class="text-gray-600 dark:text-gray-400">Creado:</span>
-                                <span class="text-gray-900 dark:text-white font-medium">
-                                    {{ formatDate(prestacion.created_at) }}
-                                </span>
-                            </div>
-
-                            <div v-if="prestacion.updated_at !== prestacion.created_at" class="flex justify-between">
-                                <span class="text-gray-600 dark:text-gray-400">Modificado:</span>
-                                <span class="text-gray-900 dark:text-white font-medium">
-                                    {{ formatDate(prestacion.updated_at) }}
-                                </span>
-                            </div>
-
-                            <div class="flex justify-between">
-                                <span class="text-gray-600 dark:text-gray-400">ID:</span>
-                                <span class="text-gray-900 dark:text-white font-mono text-xs">
-                                    {{ prestacion.id }}
-                                </span>
-                            </div>
-                        </div>
-                    </CardBox>
-
-                    <!-- Acciones -->
-                    <CardBox>
-                        <div class="p-6 space-y-3">
-                            <BaseButton
-                                :route-name="route('prestaciones.edit', prestacion.id)"
-                                :icon="mdiPencil"
-                                label="Editar Prestación"
-                                color="success"
-                                class="w-full justify-center"
-                            />
-
-                            <BaseButton
-                                @click="showDeleteModal = true"
-                                :icon="mdiDelete"
-                                label="Eliminar Prestación"
-                                color="danger"
-                                outline
-                                class="w-full justify-center"
-                            />
-                        </div>
-                    </CardBox>
-                </div>
-            </div>
-
-            <!-- Modal de confirmación para eliminar -->
-            <div v-if="showDeleteModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                <div class="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4">
-                    <div class="flex items-center gap-3 mb-4">
-                        <Icon :path="mdiAlertCircle" class="w-6 h-6 text-red-500" />
-                        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
-                            Confirmar Eliminación
-                        </h3>
-                    </div>
-
-                    <p class="text-gray-600 dark:text-gray-400 mb-6">
-                        ¿Estás seguro de que deseas eliminar la prestación
-                        <strong>"{{ prestacion.nombre }}"</strong>?
-                        Esta acción no se puede deshacer.
-                    </p>
-
-                    <div class="flex gap-3">
-                        <BaseButton
-                            @click="showDeleteModal = false"
-                            label="Cancelar"
-                            color="contrast"
-                            outline
-                            class="flex-1"
-                        />
-                        <BaseButton
-                            @click="deletePrestacion"
-                            :icon="mdiDelete"
-                            label="Eliminar"
-                            color="danger"
-                            class="flex-1"
-                            :disabled="deleteForm.processing"
-                        />
                     </div>
                 </div>
+
             </div>
-        </SectionMain>
+        </div>
+
+        <!-- Estado de carga -->
+        <div v-else class="max-w-4xl mx-auto px-4 py-6 text-center">
+            <div class="bg-white rounded-lg shadow p-8">
+                <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                <h3 class="text-lg font-medium text-gray-900 mb-2">Cargando prestación...</h3>
+                <p class="text-gray-500">Por favor espera un momento</p>
+            </div>
+        </div>
     </AuthenticatedLayout>
 </template>
 
 <script setup>
-import { Head, useForm, router } from '@inertiajs/vue3'
-import { ref } from 'vue'
-import {
-    mdiMedicalBag,
-    mdiPencil,
-    mdiArrowLeft,
-    mdiInformation,
-    mdiCurrencyUsd,
-    mdiNoteText,
-    mdiClockOutline,
-    mdiAlertCircle
-} from '@mdi/js'
-
+import { Head, Link, router } from '@inertiajs/vue3'
+import { computed } from 'vue'
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue'
-import SectionMain from '@/components/SectionMain.vue'
-import SectionTitleLineWithButton from '@/components/SectionTitleLineWithButton.vue'
-import CardBox from '@/components/CardBox.vue'
-import BaseButton from '@/components/BaseButton.vue'
-import Icon from '@/components/Icon.vue'
 
 const props = defineProps({
-    prestacion: Object
+    prestacion: Object,
 })
 
-const showDeleteModal = ref(false)
+// Computed properties
+const planesAsociadosCount = computed(() => {
+    return props.prestacion?.planes?.length || 0
+})
 
-const deleteForm = useForm({})
+// Funciones
+const getEstadoClass = (estado) => {
+    const classes = {
+        'activo': 'bg-green-100 text-green-800',
+        'inactivo': 'bg-red-100 text-red-800',
+        'suspendido': 'bg-yellow-100 text-yellow-800'
+    }
+    return classes[estado] || 'bg-gray-100 text-gray-800'
+}
 
-// Funciones de utilidad
-const formatCurrency = (value) => {
-    return new Intl.NumberFormat('es-AR', {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2
-    }).format(value || 0)
+const capitalizeFirst = (str) => {
+    if (!str) return ''
+    return str.charAt(0).toUpperCase() + str.slice(1)
+}
+
+const formatCurrency = (amount) => {
+    if (!amount) return '0'
+    return parseFloat(amount).toLocaleString('es-CO', {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0
+    })
 }
 
 const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleString('es-AR', {
+    if (!dateString) return 'No disponible'
+    const date = new Date(dateString)
+    return date.toLocaleDateString('es-CO', {
         year: 'numeric',
         month: 'long',
         day: 'numeric',
         hour: '2-digit',
         minute: '2-digit'
-    })
-}
-
-const getEstadoLabel = (estado) => {
-    const labels = {
-        activo: 'Activo',
-        inactivo: 'Inactivo',
-        suspendido: 'Suspendido'
-    }
-    return labels[estado] || estado
-}
-
-const getEstadoBadgeClass = (estado) => {
-    const classes = {
-        activo: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
-        inactivo: 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200',
-        suspendido: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
-    }
-    return classes[estado] || 'bg-gray-100 text-gray-800'
-}
-
-const copyToClipboard = async () => {
-    const text = `Código: ${props.prestacion.codigo}\nNombre: ${props.prestacion.nombre}\nPrecio: ${formatCurrency(props.prestacion.precio_general)}`
-
-    try {
-        await navigator.clipboard.writeText(text)
-        // Aquí podrías mostrar un toast de éxito
-        alert('Información copiada al portapapeles')
-    } catch (err) {
-        console.error('Error al copiar al portapapeles:', err)
-        alert('Error al copiar la información')
-    }
-}
-
-const deletePrestacion = () => {
-    deleteForm.delete(route('prestaciones.destroy', props.prestacion.id), {
-        onSuccess: () => {
-            router.visit(route('prestaciones.index'))
-        },
-        onError: () => {
-            showDeleteModal.value = false
-            alert('Error al eliminar la prestación')
-        }
     })
 }
 </script>

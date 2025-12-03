@@ -7,12 +7,12 @@
             <div class="flex flex-1 items-stretch h-14">
                 <div class="hidden lg:flex lg:items-center lg:mr-6 xl:mr-12">
                     <div class="inline-flex items-center">
-                        <BaseIcon
-                            :path="mdiMonitor"
-                            class="text-blue-500 mr-2"
-                            size="32"
+                        <img
+                            src="/images/LogoPieveSalud.jpg"
+                            alt="Pieve Salud"
+                            class="h-10 w-auto mr-3 rounded"
                         />
-                        <b class="font-black text-xl text-blue-500">Sistema</b>
+                        <b class="font-black text-xl" style="color: #2D6660;">Emisión</b>
                     </div>
                 </div>
                 <div class="flex-1 flex items-center h-14">

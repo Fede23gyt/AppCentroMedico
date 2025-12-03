@@ -11,15 +11,6 @@
             >
                 <div class="flex gap-2">
                     <BaseButton
-                        :route-name="route('prestaciones.show', prestacion.id)"
-                        :icon="mdiEye"
-                        label="Ver"
-                        color="info"
-                        outline
-                        rounded-full
-                        small
-                    />
-                    <BaseButton
                         :route-name="route('prestaciones.index')"
                         :icon="mdiArrowLeft"
                         label="Volver"
@@ -49,7 +40,7 @@
             <CardBox v-else form @submit.prevent="submit">
                 <!-- Información Básica -->
                 <div class="mb-8">
-                    <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-6 flex items-center">
+                    <h3 class="text-lg font-semibold text-white mb-4 flex items-center p-4 rounded-lg" style="background-color: #2D6660;">
                         <Icon :path="mdiInformation" class="w-5 h-5 mr-2" />
                         Información Básica
                     </h3>
@@ -142,7 +133,7 @@
 
                 <!-- Categorización -->
                 <div class="mb-8">
-                    <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-6 flex items-center">
+                    <h3 class="text-lg font-semibold text-white mb-4 flex items-center p-4 rounded-lg" style="background-color: #2D6660;">
                         <Icon :path="mdiTag" class="w-5 h-5 mr-2" />
                         Categorización
                     </h3>
@@ -179,72 +170,96 @@
 
                 <!-- Precios -->
                 <div class="mb-8">
-                    <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-6 flex items-center">
+                    <h3 class="text-lg font-semibold text-white mb-4 flex items-center p-4 rounded-lg" style="background-color: #2D6660;">
                         <Icon :path="mdiCurrencyUsd" class="w-5 h-5 mr-2" />
                         Configuración de Precios
                     </h3>
 
                     <div class="space-y-6">
-                        <!-- Precio General -->
-                        <div class="flex items-start gap-4">
-                            <label class="text-sm font-medium text-gray-700 dark:text-gray-300 w-32 flex-shrink-0 pt-2">
-                                Precio General <span class="text-red-500">*</span>
-                            </label>
-                            <div class="flex-1 max-w-xs">
-                                <div class="relative">
-                                    <span class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">$</span>
-                                    <input
-                                        v-model="form.precio_general"
-                                        type="number"
-                                        step="0.01"
-                                        min="0"
-                                        placeholder="0"
-                                        required
-                                        class="w-full pl-8 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
-                                        :class="{ 'border-red-500': form.errors.precio_general }"
-                                    />
+                        <!--Nuevos campos-->
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                            <!-- Valor IPS -->
+                            <div class="flex items-start gap-4">
+                                <label class="text-sm font-medium text-gray-700 dark:text-gray-300 w-32 flex-shrink-0 pt-2">
+                                    Valor IPS
+                                </label>
+                                <div class="flex-1 max-w-xs">
+                                    <div class="relative">
+                                        <span class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">$</span>
+                                        <input
+                                            v-model="form.valor_ips"
+                                            type="number"
+                                            step="0.01"
+                                            min="0"
+                                            placeholder="0"
+                                            class="w-full pl-8 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                                            :class="{ 'border-red-500': form.errors.valor_ips }"
+                                        />
+                                    </div>
+                                    <div class="text-xs text-gray-500 mt-1">Valor para Instituto de Previsión Social</div>
+                                    <div v-if="form.errors.valor_ips" class="text-red-500 text-sm mt-1">
+                                        {{ form.errors.valor_ips }}
+                                    </div>
                                 </div>
-                                <div class="text-xs text-gray-500 mt-1">Precio base de la prestación</div>
-                                <div v-if="form.errors.precio_general" class="text-red-500 text-sm mt-1">
-                                    {{ form.errors.precio_general }}
+                            </div>
+
+                            <!-- Porcentaje IPS -->
+                            <div class="flex items-start gap-4">
+                                <label class="text-sm font-medium text-gray-700 dark:text-gray-300 w-32 flex-shrink-0 pt-2">
+                                    Porcentaje IPS <span class="text-red-500">*</span>
+                                </label>
+                                <div class="flex-1 max-w-xs">
+                                    <div class="relative">
+                                        <input
+                                            v-model.number="form.porc_ips"
+                                            type="number"
+                                            step="0.01"
+                                            min="-100"
+                                            max="100"
+                                            placeholder="0"
+                                            required
+                                            class="w-full pr-8 pl-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                                            :class="{ 'border-red-500': form.errors.porc_ips }"
+                                        />
+                                        <span class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500">%</span>
+                                    </div>
+                                    <div class="text-xs text-gray-500 mt-1">Porcentaje aplicado sobre el valor IPS (puede ser negativo)</div>
+                                    <div v-if="form.errors.porc_ips" class="text-red-500 text-sm mt-1">
+                                        {{ form.errors.porc_ips }}
+                                    </div>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Valor IPS -->
+                        <!-- Valor Referencia (Calculado) -->
                         <div class="flex items-start gap-4">
-                            <label class="text-sm font-medium text-gray-700 dark:text-gray-300 w-32 flex-shrink-0 pt-2">
-                                Valor IPS
-                            </label>
-                            <div class="flex-1 max-w-xs">
-                                <div class="relative">
-                                    <span class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">$</span>
-                                    <input
-                                        v-model="form.valor_ips"
-                                        type="number"
-                                        step="0.01"
-                                        min="0"
-                                        placeholder="0"
-                                        class="w-full pl-8 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
-                                        :class="{ 'border-red-500': form.errors.valor_ips }"
-                                    />
-                                </div>
-                                <div class="text-xs text-gray-500 mt-1">Valor para Instituto de Previsión Social</div>
-                                <div v-if="form.errors.valor_ips" class="text-red-500 text-sm mt-1">
-                                    {{ form.errors.valor_ips }}
-                                </div>
-                            </div>
+                        <label class="text-sm font-medium text-gray-700 dark:text-gray-300 w-32 flex-shrink-0 pt-2">
+                          Valor Referencia
+                        </label>
+                        <div class="flex-1 max-w-xs">
+                          <div class="relative">
+                            <span class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">$</span>
+                            <input
+                              :value="valorReferenciaCalculado"
+                              type="text"
+                              readonly
+                              class="w-full pl-8 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 cursor-not-allowed"
+                            />
+                          </div>
+                          <div class="text-xs text-gray-500 mt-1">
+                            Calculado automáticamente: Valor IPS {{ form.porc_ips >= 0 ? '+' : '' }}{{ form.porc_ips || 0 }}%
+                          </div>
                         </div>
+                      </div>
 
-                        <!-- Comparación de precios -->
-                        <div v-if="hasChangedPrices" class="p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
-                            <h4 class="text-sm font-medium text-yellow-800 dark:text-yellow-200 mb-2">Cambios en precios:</h4>
-                            <div class="text-sm text-yellow-700 dark:text-yellow-300 space-y-1">
-                                <div v-if="form.precio_general != prestacion.precio_general">
-                                    Precio General: ${{ formatCurrency(prestacion.precio_general) }} → ${{ formatCurrency(form.precio_general) }}
-                                </div>
-                                <div v-if="form.valor_ips != prestacion.valor_ips">
-                                    Valor IPS: ${{ formatCurrency(prestacion.valor_ips) }} → ${{ formatCurrency(form.valor_ips) }}
+                        <!-- Vista previa del cálculo -->
+                        <div v-if="form.valor_ips" class="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                            <h4 class="text-sm font-medium text-blue-800 dark:text-blue-200 mb-2">Vista previa de cálculo:</h4>
+                            <div class="text-sm text-blue-700 dark:text-blue-300 space-y-1">
+                                <div>Valor IPS: ${{ formatCurrency(form.valor_ips) }}</div>
+                                <div>Porcentaje IPS: {{ form.porc_ips >= 0 ? '+' : '' }}{{ form.porc_ips || 0 }}%</div>
+                                <div class="font-bold border-t border-blue-300 pt-1 mt-1">
+                                    Valor Referencia: ${{ formatCurrency(valorReferenciaCalculado) }}
                                 </div>
                             </div>
                         </div>
@@ -255,7 +270,7 @@
 
                 <!-- Información Adicional -->
                 <div class="mb-8">
-                    <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-6 flex items-center">
+                    <h3 class="text-lg font-semibold text-white mb-4 flex items-center p-4 rounded-lg" style="background-color: #2D6660;">
                         <Icon :path="mdiNoteText" class="w-5 h-5 mr-2" />
                         Información Adicional
                     </h3>
@@ -314,8 +329,9 @@
                     </button>
 
                     <button
-                        type="submit"
+                        type="button"
                         :disabled="form.processing || !hasChanges"
+                        @click="submit"
                         :class="[
                             'inline-flex items-center gap-2 px-6 py-2 text-sm font-medium text-white rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500',
                             form.processing || !hasChanges
@@ -365,13 +381,24 @@ const props = defineProps({
 })
 
 const form = useForm({
+    codigo: props.prestacion.codigo,
     nombre: props.prestacion.nombre,
     descripcion: props.prestacion.descripcion,
     estado: props.prestacion.estado,
     rubro_id: props.prestacion.rubro_id,
     precio_general: props.prestacion.precio_general,
     valor_ips: props.prestacion.valor_ips,
+    precio_afiliado: props.prestacion.precio_afiliado,
+    porc_ips: props.prestacion.porc_ips || 0,
+    uvr: props.prestacion.uvr,
     observaciones: props.prestacion.observaciones
+})
+
+// Computed para calcular el valor de referencia automáticamente con redondeo estándar
+const valorReferenciaCalculado = computed(() => {
+    const valorIps = parseFloat(form.valor_ips) || 0
+    const porcIps = parseFloat(form.porc_ips) || 0
+    return Math.round(valorIps * (1 + (porcIps / 100)))
 })
 
 // Campo reactivo para el checkbox basado en estado
@@ -384,19 +411,28 @@ const activo = computed({
 
 // Detectar cambios en el formulario
 const hasChanges = computed(() => {
-    return form.nombre !== props.prestacion.nombre ||
-        form.descripcion !== props.prestacion.descripcion ||
+    const normalizeValue = (val) => val === null || val === undefined ? '' : String(val)
+    const normalizeNumber = (val) => val === null || val === undefined || val === '' ? 0 : parseFloat(val)
+
+    return normalizeValue(form.nombre) !== normalizeValue(props.prestacion.nombre) ||
+        normalizeValue(form.descripcion) !== normalizeValue(props.prestacion.descripcion) ||
         form.estado !== props.prestacion.estado ||
         form.rubro_id !== props.prestacion.rubro_id ||
-        parseFloat(form.precio_general) !== parseFloat(props.prestacion.precio_general) ||
-        parseFloat(form.valor_ips) !== parseFloat(props.prestacion.valor_ips) ||
-        form.observaciones !== props.prestacion.observaciones
+        normalizeNumber(form.precio_general) !== normalizeNumber(props.prestacion.precio_general) ||
+        normalizeNumber(form.valor_ips) !== normalizeNumber(props.prestacion.valor_ips) ||
+      normalizeNumber(form.precio_afiliado) !== normalizeNumber(props.prestacion.precio_afiliado) ||
+        normalizeNumber(form.porc_ips) !== normalizeNumber(props.prestacion.porc_ips) ||
+        normalizeNumber(form.uvr) !== normalizeNumber(props.prestacion.uvr) ||
+        normalizeValue(form.observaciones) !== normalizeValue(props.prestacion.observaciones)
 })
 
 // Detectar cambios específicos en precios
 const hasChangedPrices = computed(() => {
-    return parseFloat(form.precio_general) !== parseFloat(props.prestacion.precio_general) ||
-        parseFloat(form.valor_ips) !== parseFloat(props.prestacion.valor_ips)
+    return parseFloat(form.precio_general || 0) !== parseFloat(props.prestacion.precio_general || 0) ||
+        parseFloat(form.valor_ips || 0) !== parseFloat(props.prestacion.valor_ips || 0) ||
+        parseFloat(form.precio_afiliado || 0) !== parseFloat(props.prestacion.precio_afiliado || 0) ||
+        parseFloat(form.porc_ips || 0) !== parseFloat(props.prestacion.porc_ips || 0) ||
+        parseFloat(form.uvr || 0) !== parseFloat(props.prestacion.uvr || 0)
 })
 
 // Funciones de utilidad
@@ -436,27 +472,47 @@ const getEstadoBadgeClass = (estado) => {
 }
 
 // Validar campos numéricos
-watch(() => form.precio_general, (newValue) => {
-    if (newValue && newValue < 0) {
-        form.precio_general = 0
-    }
-})
-
 watch(() => form.valor_ips, (newValue) => {
     if (newValue && newValue < 0) {
         form.valor_ips = 0
     }
 })
 
-const submit = () => {
-    console.log('Actualizando prestación...')
+watch(() => form.porc_ips, (newValue) => {
+  if (newValue && newValue < -100) {
+    form.porc_ips = -100
+  }
+})
 
+const submit = () => {
+    console.log('=== SUBMIT FUNCTION CALLED ===')
+    console.log('Form data:', form.data())
+    console.log('Props prestacion:', props.prestacion)
+    console.log('Has changes:', hasChanges.value)
+    console.log('Form processing:', form.processing)
+
+    // Comparaciones detalladas
+    console.log('Comparación nombre:', form.nombre, '!==', props.prestacion.nombre, '=', form.nombre !== props.prestacion.nombre)
+    console.log('Comparación estado:', form.estado, '!==', props.prestacion.estado, '=', form.estado !== props.prestacion.estado)
+    console.log('Comparación precio_general:', form.precio_general, '!==', props.prestacion.precio_general, '=', form.precio_general !== props.prestacion.precio_general)
+    console.log('Comparación precio_afiliado:', form.precio_afiliado, '!==', props.prestacion.precio_afiliado, '=', form.precio_afiliado !== props.prestacion.precio_afiliado)
+
+    if (!hasChanges.value) {
+        console.warn('⚠️ No changes detected, submit blocked')
+        alert('No se detectaron cambios en el formulario. Modifica algún campo para poder actualizar.')
+        return
+    }
+
+    console.log('✅ Enviando datos al servidor...')
     form.put(route('prestaciones.update', props.prestacion.id), {
-        onSuccess: () => {
-            console.log('¡Prestación actualizada exitosamente!')
+        onSuccess: (response) => {
+            console.log('✅ ¡Prestación actualizada exitosamente!', response)
         },
         onError: (errors) => {
-            console.log('Errores:', errors)
+            console.error('❌ Errores de validación:', errors)
+        },
+        onFinish: () => {
+            console.log('Request finished')
         }
     })
 }

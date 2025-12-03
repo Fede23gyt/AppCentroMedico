@@ -3,11 +3,17 @@
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\RoleController;
 use App\Http\Controllers\SucursalController;
 use App\Http\Controllers\PlanController;
 use App\Http\Controllers\RubroController;
 use App\Http\Controllers\PrestacionController;
 use App\Http\Controllers\PrestacionPlanController;
+use App\Http\Controllers\PrestadorController;
+use App\Http\Controllers\OrdenController;
+use App\Http\Controllers\RendicionController;
+use App\Http\Controllers\MapeoSaludController;
+use App\Http\Controllers\ReporteController;
 use App\Models\Prestacion;
 use App\Models\Plan;
 use App\Models\Rubro;
@@ -33,11 +39,31 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])
         ->name('dashboard');
 
+  Route::match(['GET', 'POST'], 'mapeo/generar', [\App\Http\Controllers\MapeoSaludController::class, 'generarMapeo'])->name('mapeo.generar');
+  Route::get('mapeo/estadisticas', [\App\Http\Controllers\MapeoSaludController::class, 'obtenerEstadisticas'])->name('mapeo.estadisticas');
+  Route::get('mapeo/listar', [\App\Http\Controllers\MapeoSaludController::class, 'listarMapeos'])->name('mapeo.listar');
+  Route::post('mapeo/buscar', [\App\Http\Controllers\MapeoSaludController::class, 'buscarCobertura'])->name('mapeo.buscar');
+  Route::match(['GET', 'POST'], 'mapeo/consultar-con-mapeo', [\App\Http\Controllers\MapeoSaludController::class, 'consultarConMapeo'])->name('mapeo.consultar-con-mapeo');
+  Route::put('mapeo/{mapeoId}/desactivar', [\App\Http\Controllers\MapeoSaludController::class, 'desactivarMapeo'])->name('mapeo.desactivar');
+  Route::put('mapeo/{mapeoId}/activar', [\App\Http\Controllers\MapeoSaludController::class, 'activarMapeo'])->name('mapeo.activar');
+
+
+
+    // Perfil de usuario
+    Route::get('/profile', [App\Http\Controllers\ProfileController::class, 'edit'])->name('profile.edit');
+    Route::patch('/profile', [App\Http\Controllers\ProfileController::class, 'update'])->name('profile.update');
+    Route::delete('/profile', [App\Http\Controllers\ProfileController::class, 'destroy'])->name('profile.destroy');
+
     // Rutas de usuarios
     Route::middleware(['permission:users.view'])->group(function () {
         Route::resource('users', UserController::class);
         Route::patch('users/{user}/toggle-status', [UserController::class, 'toggleStatus'])
             ->name('users.toggle-status');
+    });
+
+    // Rutas de roles y permisos
+    Route::middleware(['permission:roles.view'])->group(function () {
+        Route::resource('roles', RoleController::class);
     });
 
     // Rutas de sucursales
@@ -53,8 +79,48 @@ Route::middleware(['auth'])->group(function () {
     Route::resource('rubros', RubroController::class);
     Route::get('api/rubros', [RubroController::class, 'apiList'])->name('api.rubros');
 
+    // Prestadores
+    Route::resource('prestadores', PrestadorController::class)
+        ->parameters(['prestadores' => 'prestador']);
+    Route::patch('prestadores/{prestador}/toggle-status', [PrestadorController::class, 'toggleStatus'])
+        ->name('prestadores.toggle-status');
+    Route::get('api/prestadores', [PrestadorController::class, 'apiList'])->name('api.prestadores');
+
+    // Ordenes
+    Route::resource('ordenes', OrdenController::class)
+        ->except(['edit', 'update'])
+        ->parameters(['ordenes' => 'orden']);
+    Route::post('ordenes/{orden}/cambiar-estado', [OrdenController::class, 'cambiarEstado'])
+        ->name('ordenes.cambiar-estado');
+    Route::get('ordenes/{orden}/pdf', [OrdenController::class, 'exportarPdf'])
+        ->name('ordenes.pdf');
+
+    // API de órdenes
+    Route::post('api/ordenes/buscar-afiliados', [OrdenController::class, 'buscarAfiliados'])
+        ->name('api.ordenes.buscar-afiliados');
+    Route::post('api/ordenes/obtener-precio-prestacion', [OrdenController::class, 'obtenerPrecioPrestacion'])
+        ->name('api.ordenes.obtener-precio-prestacion');
+
+    // Rendiciones
+    Route::resource('rendiciones', RendicionController::class)
+        ->except(['edit', 'update'])
+        ->parameters(['rendiciones' => 'rendicion']);
+    Route::post('rendiciones/{rendicion}/cerrar', [RendicionController::class, 'cerrar'])
+        ->name('rendiciones.cerrar');
+    Route::get('rendiciones/{rendicion}/pdf', [RendicionController::class, 'exportarPdf'])
+        ->name('rendiciones.pdf');
+
+    // API de rendiciones
+    Route::post('api/rendiciones/buscar-orden', [RendicionController::class, 'buscarOrden'])
+        ->name('api.rendiciones.buscar-orden');
+    Route::post('rendiciones/{rendicion}/agregar-orden', [RendicionController::class, 'agregarOrden'])
+        ->name('rendiciones.agregar-orden');
+    Route::post('rendiciones/{rendicion}/quitar-orden', [RendicionController::class, 'quitarOrden'])
+        ->name('rendiciones.quitar-orden');
+
     // Planes
-    Route::resource('planes', PlanController::class);
+    Route::resource('planes', PlanController::class)
+        ->parameters(['planes' => 'plan']);
     Route::get('api/planes', [PlanController::class, 'apiList'])->name('api.planes');
 
     // Prestaciones
@@ -97,9 +163,69 @@ Route::middleware(['auth'])->group(function () {
         // Gestión avanzada (opcional - página separada)
         Route::get('planes/avanzado', [PrestacionController::class, 'planesAvanzado'])
             ->name('prestaciones.planes-avanzado');
+
+
+
+
+
     });
 
-    // API de prestaciones (existente)
+    // ===== GESTIÓN DE PLANES-PRESTACIONES (DESDE PLANES) =====
+    Route::prefix('planes/{plan}')->group(function () {
+        // Vista principal de gestión de prestaciones del plan
+        Route::get('prestaciones', [PlanController::class, 'prestaciones'])
+            ->name('planes.prestaciones.index');
+
+        // Asociar prestación al plan
+        Route::post('prestaciones', [PlanController::class, 'asociarPrestacion'])
+            ->name('planes.prestaciones.store');
+
+        // Actualizar asociación prestación-plan
+        Route::put('prestaciones/{prestacion}', [PlanController::class, 'actualizarPrestacion'])
+            ->name('planes.prestaciones.update');
+
+        // Desasociar prestación del plan
+        Route::delete('prestaciones/{prestacion}', [PlanController::class, 'desasociarPrestacion'])
+            ->name('planes.prestaciones.destroy');
+
+        // ===== ACCIONES MASIVAS =====
+        // Copiar prestaciones desde otro plan
+        Route::post('copiar-prestaciones', [PlanController::class, 'copiarPrestaciones'])
+            ->name('planes.copiar-prestaciones');
+
+        // Ajuste masivo de precios
+        Route::patch('ajuste-masivo-precios', [PlanController::class, 'ajusteMasivoPrecios'])
+            ->name('planes.ajuste-masivo-precios');
+
+        // Exportar configuración a Excel
+        Route::get('export-excel', [PlanController::class, 'exportarExcel'])
+            ->name('planes.export-excel');
+
+        // Exportar configuración a PDF
+        Route::get('export-pdf', [PlanController::class, 'exportarPdf'])
+            ->name('planes.export-pdf');
+
+        // Importar desde Excel
+        Route::post('import-excel', [PlanController::class, 'importarExcel'])
+            ->name('planes.import-excel');
+
+        // ===== GESTIÓN DE ITEMS REQUERIDOS =====
+        // Agregar item al plan
+        Route::post('items', [PlanController::class, 'agregarItem'])
+            ->name('planes.items.store');
+
+        // Eliminar item del plan
+        Route::delete('items/{item}', [PlanController::class, 'eliminarItem'])
+            ->name('planes.items.destroy');
+    });
+
+
+  });
+
+
+
+
+  // API de prestaciones (existente)
     Route::get('api/prestaciones', [PrestacionController::class, 'apiList'])
         ->name('api.prestaciones');
 
@@ -150,6 +276,48 @@ Route::middleware(['auth'])->group(function () {
                 ->get(['id', 'codigo', 'nombre', 'rubro_id', 'precio_general']);
         })->name('api.prestaciones.search');
 
+        // Buscar prestaciones para órdenes (con plan específico)
+        Route::get('prestaciones/buscar', function(Request $request) {
+            $query = Prestacion::query();
+
+            if ($request->filled('search')) {
+                $query->where(function($q) use ($request) {
+                    $q->where('codigo', 'like', "%{$request->search}%")
+                      ->orWhere('descripcion', 'like', "%{$request->search}%");
+                });
+            }
+
+            if ($request->filled('plan_id')) {
+                $query->whereHas('planes', function($q) use ($request) {
+                    $q->where('plan_id', $request->plan_id)
+                      ->where('prestaciones_planes.estado', 'activo');
+                });
+            }
+
+            if ($request->filled('activas')) {
+                $query->where('estado', 'activo');
+            }
+
+            return $query->orderBy('codigo')
+                ->limit(20)
+                ->get()
+                ->map(function($prestacion) use ($request) {
+                    $precio = null;
+                    if ($request->filled('plan_id')) {
+                        $asociacion = $prestacion->planes()
+                            ->where('plan_id', $request->plan_id)
+                            ->first();
+                        $precio = $asociacion?->pivot->precio;
+                    }
+                    return [
+                        'id' => $prestacion->id,
+                        'codigo' => $prestacion->codigo,
+                        'descripcion' => $prestacion->descripcion,
+                        'precio_plan' => $precio ?? $prestacion->precio_general,
+                    ];
+                });
+        })->name('api.prestaciones.buscar');
+
         // Estadísticas de prestaciones por plan
         Route::get('planes/{plan}/prestaciones/estadisticas', function(Plan $plan) {
             $stats = [
@@ -178,63 +346,34 @@ Route::middleware(['auth'])->group(function () {
         })->name('api.prestaciones.siguiente-codigo');
     });
 
-    // ===== RUTAS DE REPORTES (OPCIONALES) =====
-    Route::prefix('reportes')->group(function () {
-        // Reporte de cobertura por plan
-        Route::get('cobertura-planes', function() {
-            $planes = Plan::with(['prestaciones.rubro'])
-                ->activos()
-                ->get()
-                ->map(function($plan) {
-                    return [
-                        'plan' => $plan->nombre,
-                        'codigo' => $plan->nombre_corto,
-                        'total_prestaciones' => $plan->prestaciones->count(),
-                        'prestaciones_por_rubro' => $plan->prestaciones
-                            ->groupBy('rubro.nombre')
-                            ->map->count(),
-                        'promedio_afiliado' => $plan->prestaciones->avg('pivot.valor_afiliado'),
-                        'promedio_particular' => $plan->prestaciones->avg('pivot.valor_particular')
-                    ];
-                });
-
-            return Inertia::render('Reportes/CoberturaPlan', [
-                'planes' => $planes
-            ]);
-        })->name('reportes.cobertura-planes');
-
-        // Reporte de prestaciones sin cobertura
-        Route::get('prestaciones-sin-cobertura', function() {
-            $prestacionesSinCobertura = Prestacion::doesntHave('planes')
-                ->with('rubro')
-                ->where('estado', 'activo')
-                ->orderBy('codigo')
-                ->get();
-
-            return Inertia::render('Reportes/PrestacionesSinCobertura', [
-                'prestaciones' => $prestacionesSinCobertura
-            ]);
-        })->name('reportes.prestaciones-sin-cobertura');
-
-        // Reporte de matriz prestaciones-planes
-        Route::get('matriz-prestaciones-planes', function(Request $request) {
-            $planes = Plan::where('estado', 'activo')->orderBy('nombre')->get(['id', 'nombre', 'nombre_corto']);
-            $prestaciones = Prestacion::with(['planes', 'rubro'])
-                ->when($request->rubro_id, function($query, $rubroId) {
-                    $query->where('rubro_id', $rubroId);
-                })
-                ->where('estado', 'activo')
-                ->orderBy('codigo')
-                ->paginate(50);
-
-            $rubros = Rubro::where('estado', 'activo')->orderBy('nombre')->get(['id', 'nombre']);
-
-            return Inertia::render('Reportes/MatrizPrestacionesPlan', [
-                'planes' => $planes,
-                'prestaciones' => $prestaciones,
-                'rubros' => $rubros,
-                'filtros' => $request->only(['rubro_id'])
-            ]);
-        })->name('reportes.matriz-prestaciones-planes');
+    // ===== RUTAS DE REPORTES =====
+    Route::prefix('reportes')->middleware(['permission:reportes.view'])->group(function () {
+        Route::get('ordenes', [ReporteController::class, 'ordenes'])->name('reportes.ordenes');
+        Route::get('prestaciones', [ReporteController::class, 'prestaciones'])->name('reportes.prestaciones');
+        Route::get('sucursales', [ReporteController::class, 'sucursales'])->name('reportes.sucursales');
+        Route::get('cajas', [ReporteController::class, 'cajas'])->name('reportes.cajas');
+        Route::get('usuarios', [ReporteController::class, 'usuarios'])->name('reportes.usuarios');
+        Route::get('planes', [ReporteController::class, 'planes'])->name('reportes.planes');
+        Route::get('ventas', [ReporteController::class, 'ventas'])->name('reportes.ventas');
     });
-});
+
+
+    // ===== NUEVAS RUTAS API PARA PLANES =====
+    Route::prefix('api/planes')->group(function () {
+        // Prestaciones disponibles para un plan específico
+        Route::get('{plan}/prestaciones-disponibles', [PlanController::class, 'apiPrestacionesDisponibles'])
+            ->name('api.planes.prestaciones-disponibles');
+
+        // Estadísticas de prestaciones de un plan
+        Route::get('{plan}/prestaciones/estadisticas', [PlanController::class, 'apiEstadisticasPrestaciones'])
+            ->name('api.planes.prestaciones.estadisticas');
+
+        // Precios de una prestación en el plan
+        Route::get('{plan}/prestaciones/{prestacion}/precios', [PlanController::class, 'apiPreciosPrestacion'])
+            ->name('api.planes.prestaciones.precios');
+
+        // Buscar planes para autocompletar
+        Route::get('search', [PlanController::class, 'apiSearch'])
+            ->name('api.planes.search');
+    });
+

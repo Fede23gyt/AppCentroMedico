@@ -50,4 +50,20 @@ class Sucursal extends Model
     {
         return $this->users()->role('administrativo');
     }
+
+    // Relación muchos a muchos con Prestadores
+    public function prestadores()
+    {
+        return $this->belongsToMany(Prestador::class, 'prestador_sucursal')
+            ->withPivot(['fecha_desde', 'fecha_hasta', 'estado', 'observaciones'])
+            ->withTimestamps();
+    }
+
+    // Relación muchos a muchos con Planes
+    public function planes()
+    {
+        return $this->belongsToMany(Plan::class, 'plan_sucursal')
+            ->withPivot(['fecha_desde', 'fecha_hasta', 'estado', 'observaciones'])
+            ->withTimestamps();
+    }
 }

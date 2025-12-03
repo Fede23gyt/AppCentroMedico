@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Sucursal;
 use App\Models\User;
+use App\Models\Plan;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -60,7 +61,9 @@ class SucursalController extends Controller
         // Debug: verificar que lleguen los datos
         \Log::info('Mostrando sucursal:', $sucursal->toArray());
 
-        $sucursal->load(['users.roles']);
+        $sucursal->load(['users.roles', 'planes' => function($query) {
+            $query->orderBy('nombre');
+        }]);
 
         // Estadísticas de la sucursal
         $stats = [
@@ -83,7 +86,8 @@ class SucursalController extends Controller
                 'is_active' => $sucursal->is_active,
                 /*'created_at' => $sucursal->created_at->format('Y-m-d H:i:s'),
                 'updated_at' => $sucursal->updated_at->format('Y-m-d H:i:s'),*/
-                'users' => $sucursal->users
+                'users' => $sucursal->users,
+                'planes' => $sucursal->planes
             ],
             'stats' => $stats,
         ]);
@@ -91,8 +95,17 @@ class SucursalController extends Controller
 
     public function edit(Sucursal $sucursal)
     {
+        $sucursal->load(['planes' => function($query) {
+            $query->orderBy('nombre');
+        }]);
+
+        $planesDisponibles = Plan::where('estado', 'activo')
+            ->orderBy('nombre')
+            ->get(['id', 'nombre', 'nombre_corto']);
+
         return Inertia::render('Sucursales/Edit', [
-            'sucursales' => $sucursal,
+            'sucursal' => $sucursal,
+            'planesDisponibles' => $planesDisponibles
         ]);
     }
 
@@ -105,9 +118,25 @@ class SucursalController extends Controller
             'telefono' => 'nullable|string|max:255',
             'email' => 'nullable|email|max:255',
             'is_active' => 'boolean',
+            'planes' => 'nullable|array',
+            'planes.*' => 'exists:planes,id'
         ]);
 
         $sucursal->update($validated);
+
+        // Sincronizar planes
+        if (isset($validated['planes'])) {
+            $syncData = [];
+            foreach ($validated['planes'] as $planId) {
+                $syncData[$planId] = [
+                    'estado' => 'activo',
+                    'fecha_desde' => now(),
+                    'created_at' => now(),
+                    'updated_at' => now()
+                ];
+            }
+            $sucursal->planes()->sync($syncData);
+        }
 
         return redirect()->route('sucursales.index')
             ->with('message', 'Sucursal actualizada exitosamente.');

@@ -12,6 +12,7 @@ class Rubro extends Model
     protected $fillable = [
         'nombre',
         'descripcion',
+        'porc',
         'estado'
     ];
 

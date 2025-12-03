@@ -4,7 +4,7 @@
             :is="componentIs"
             :href="item.to"
             :target="item.target ?? null"
-            class="flex cursor-pointer text-gray-300 hover:text-white hover:bg-gray-700 px-6 py-3 transition-colors"
+            class="flex cursor-pointer transition-colors duration-200"
             :class="componentClass"
             @click="menuClick"
         >
@@ -14,7 +14,7 @@
                 class="flex-none mr-3 text-gray-400"
                 :size="18"
             />
-            <span class="grow text-ellipsis line-clamp-1">
+            <span class="grow text-ellipsis line-clamp-1" :class="{ 'submenu-indicator': depth > 0 && !hasDropdown }">
         {{ item.label }}
       </span>
             <BaseIcon
@@ -29,16 +29,17 @@
         <div
             v-if="hasDropdown"
             :class="[
-        'transition-all duration-200 overflow-hidden',
-        isDropdownActive ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
+        'transition-all duration-300 overflow-hidden',
+        isDropdownActive ? 'max-h-screen opacity-100' : 'max-h-0 opacity-0'
       ]"
         >
-            <ul class="bg-gray-800 border-l-2 border-gray-600 ml-6">
+            <ul :class="submenuContainerClass">
                 <AsideMenuItem
                     v-for="(subItem, index) in item.menu"
                     :key="index"
                     :item="subItem"
                     is-dropdown-list
+                    :depth="depth + 1"
                     @menu-click="$emit('menu-click', $event)"
                 />
             </ul>
@@ -60,6 +61,10 @@ const props = defineProps({
     isDropdownList: {
         type: Boolean,
         default: false
+    },
+    depth: {
+        type: Number,
+        default: 0
     }
 })
 
@@ -90,16 +95,97 @@ const menuClick = (event) => {
 const componentClass = computed(() => {
     const base = []
 
-    // Estilos para items activos
-    if (props.item.to && typeof window !== 'undefined' && window.location.pathname === props.item.to) {
-        base.push('bg-gray-700 text-white')
+    // Estilos base según el nivel
+    if (props.depth === 0) {
+        // Nivel principal
+        base.push('text-gray-300 hover:text-white px-6 py-3')
+        if (props.item.to && typeof window !== 'undefined' && window.location.pathname === props.item.to) {
+            base.push('text-white')
+            // Aplicar color hover inline
+            base.push('menu-item-active')
+        } else {
+            base.push('menu-item-hover')
+        }
+    } else if (props.depth === 1) {
+        // Primer nivel de submenú
+        base.push('text-gray-300 px-4 py-2 text-sm')
+        base.push('border-l-2 border-transparent')
+        if (hasDropdown.value) {
+            base.push('font-medium text-gray-200')
+        }
+        if (props.item.to && typeof window !== 'undefined' && window.location.pathname === props.item.to) {
+            base.push('text-white submenu-item-active')
+        } else {
+            base.push('submenu-item-hover')
+        }
+    } else {
+        // Segundo nivel de submenú y más profundos
+        base.push('text-gray-400 py-2 text-xs')
+        base.push('pl-8') // Indentación fija para segundo nivel
+        base.push('border-l-2 border-transparent')
+        if (props.item.to && typeof window !== 'undefined' && window.location.pathname === props.item.to) {
+            base.push('text-white submenu-nested-active')
+        } else {
+            base.push('submenu-nested-hover')
+        }
     }
 
-    // Estilos para submenús
-    if (props.isDropdownList) {
-        base.push('pl-12 text-sm')
+    return base
+})
+
+const submenuContainerClass = computed(() => {
+    const base = ['py-1']
+
+    if (props.depth === 0) {
+        // Contenedor principal - Tono más oscuro del sidebar
+        base.push('border-l-4 ml-2 submenu-container-bg')
+    } else {
+        // Contenedores anidados
+        base.push('border-l-2 border-gray-600 ml-4 submenu-nested-bg')
     }
 
     return base
 })
 </script>
+
+<style scoped>
+/* Colores basados en #2D6660 */
+.menu-item-hover:hover {
+    background-color: #245651; /* Tono más oscuro */
+}
+
+.menu-item-active {
+    background-color: #245651;
+}
+
+.submenu-container-bg {
+    background-color: #245651; /* Más oscuro que el sidebar principal */
+    border-color: #3d8a82; /* Tono más claro para el borde */
+}
+
+.submenu-item-hover:hover {
+    background-color: #1f4a46; /* Aún más oscuro para hover de submenús */
+    color: #fff;
+    border-color: #3d8a82;
+}
+
+.submenu-item-active {
+    background-color: #1f4a46;
+    border-color: #3d8a82;
+}
+
+.submenu-nested-bg {
+    background-color: #1a3f3c; /* El más oscuro para submenús anidados */
+}
+
+.submenu-nested-hover:hover {
+    background-color: #163532;
+    color: #e0f2f1;
+    border-color: #3d8a82;
+}
+
+.submenu-nested-active {
+    background-color: #163532;
+    border-color: #3d8a82;
+}
+</style>

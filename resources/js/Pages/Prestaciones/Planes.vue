@@ -1,5 +1,4 @@
-const asociarPlan = () => {
-    procesan<template>
+<template>
     <Head :title="`Planes - ${prestacion.nombre}`" />
 
     <AuthenticatedLayout>
@@ -162,14 +161,14 @@ const asociarPlan = () => {
                                                 </svg>
                                             </div>
                                         </div>
-                                        <!-- <div class="ml-4">
+                                        <div class="ml-4">
                                             <div class="text-sm font-medium text-gray-900">
                                                 {{ asociacion.plan.nombre }}
                                             </div>
                                             <div class="text-sm text-gray-500 font-mono">
                                                 {{ asociacion.plan.nombre_corto }}
                                             </div>
-                                        </div> -->
+                                        </div>
                                     </div>
                                 </td>
 

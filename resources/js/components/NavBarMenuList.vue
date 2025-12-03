@@ -2,13 +2,19 @@
     <div>
         <template v-for="(item, index) in safeMenu" :key="index">
             <div v-if="item.isDivider" class="border-t border-gray-100"></div>
-
-            v-else-if="item.label"
-            href="#"
-            class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-            @click.prevent="handleClick(item, $event)"
-            <a>
-            {{ item.label }}
+            
+            <a
+                v-else-if="item.label"
+                href="#"
+                class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                @click.prevent="handleClick(item, $event)"
+            >
+                <BaseIcon
+                    v-if="item.icon"
+                    :path="item.icon"
+                    class="w-4 h-4 mr-3"
+                />
+                {{ item.label }}
             </a>
         </template>
     </div>
@@ -16,6 +22,7 @@
 
 <script setup>
 import { computed } from 'vue'
+import BaseIcon from '@/components/BaseIcon.vue'
 
 const props = defineProps({
     menu: {

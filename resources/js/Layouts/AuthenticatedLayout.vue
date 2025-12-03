@@ -1,7 +1,8 @@
 <template>
     <div
         :class="layoutAsidePadding"
-        class="pt-14 min-h-screen w-screen transition-position lg:w-auto bg-gray-50 dark:bg-slate-800 dark:text-slate-100"
+        class="pt-14 min-h-screen w-screen transition-position lg:w-auto"
+        style="background-color: #EBF5F5;"
     >
         <NavBar
             :menu="menuNavBar"
@@ -9,7 +10,7 @@
         layoutAsidePadding,
         { 'ml-60 lg:ml-0': isAsideMobileExpanded }
       ]"
-            @menu-toggle="menuToggle"
+            @menu-click="menuClick"
         >
             <NavBarItemPlain
                 display="flex lg:hidden"
@@ -84,27 +85,21 @@ const menuToggle = () => {
     isAsideMobileExpanded.value = !isAsideMobileExpanded.value
 }
 
-/*const menuClick = (event, item) => {
+const menuClick = (event, item) => {
+    if (!item) return
+
     if (item.isToggleLightDark) {
         styleStore.setDarkMode()
+        return
     }
 
     if (item.isLogout) {
         router.post('/logout')
-    }
-}*/
-
-const menuClick = (item) => {
-    if (!item) return
-
-    if (item.isToggleLightDark) {
-        // Cambiar tema claro/oscuro
-        toggleDarkMode()
         return
     }
 
-    if (item.link) {
-        router.visit(item.link)
+    if (item.to) {
+        router.visit(item.to)
     }
 }
 

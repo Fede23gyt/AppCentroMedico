@@ -29,7 +29,7 @@
             <CardBox v-else form @submit.prevent="submit">
                 <!-- Información Básica -->
                 <div class="mb-8">
-                    <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-6 flex items-center">
+                    <h3 class="text-lg font-semibold text-white mb-4 flex items-center p-4 rounded-lg" style="background-color: #2D6660;">
                         <Icon :path="mdiInformation" class="w-5 h-5 mr-2" />
                         Información Básica
                     </h3>
@@ -140,7 +140,7 @@
 
                 <!-- Categorización -->
                 <div class="mb-8">
-                    <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-6 flex items-center">
+                    <h3 class="text-lg font-semibold text-white mb-4 flex items-center p-4 rounded-lg" style="background-color: #2D6660;">
                         <Icon :path="mdiTag" class="w-5 h-5 mr-2" />
                         Categorización
                     </h3>
@@ -177,69 +177,96 @@
 
                 <!-- Precios -->
                 <div class="mb-8">
-                    <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-6 flex items-center">
+                    <h3 class="text-lg font-semibold text-white mb-4 flex items-center p-4 rounded-lg" style="background-color: #2D6660;">
                         <Icon :path="mdiCurrencyUsd" class="w-5 h-5 mr-2" />
                         Configuración de Precios
                     </h3>
 
                     <div class="space-y-6">
-                        <!-- Precio General -->
+                      <!-- Valor IPS -->
+                      <div class="flex items-start gap-4">
+                        <label class="text-sm font-medium text-gray-700 dark:text-gray-300 w-32 flex-shrink-0 pt-2">
+                          Valor IPS
+                        </label>
+                        <div class="flex-1 max-w-xs">
+                          <div class="relative">
+                            <span class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">$</span>
+                            <input
+                              v-model="form.valor_ips"
+                              type="number"
+                              step="0.01"
+                              min="0"
+                              placeholder="0"
+                              class="w-full pl-8 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                              :class="{ 'border-red-500': form.errors.valor_ips }"
+                            />
+                          </div>
+                          <p class="text-xs text-gray-500 mt-1">Valor para Instituto de Previsión Social</p>
+                          <div v-if="form.errors.valor_ips" class="text-red-500 text-sm mt-1">
+                            {{ form.errors.valor_ips }}
+                          </div>
+                        </div>
+                      </div>
+
+                      <!-- Porcentaje IPS -->
                         <div class="flex items-start gap-4">
                             <label class="text-sm font-medium text-gray-700 dark:text-gray-300 w-32 flex-shrink-0 pt-2">
-                                Precio General <span class="text-red-500">*</span>
+                                Porcentaje IPS <span class="text-red-500">*</span>
                             </label>
                             <div class="flex-1 max-w-xs">
                                 <div class="relative">
-                                    <span class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">$</span>
                                     <input
-                                        v-model="form.precio_general"
+                                        v-model.number="form.porc_ips"
                                         type="number"
                                         step="0.01"
-                                        min="0"
+                                        min="-100"
+                                        max="100"
                                         placeholder="0"
                                         required
-                                        class="w-full pl-8 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
-                                        :class="{ 'border-red-500': form.errors.precio_general }"
+                                        class="w-full pr-8 pl-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                                        :class="{ 'border-red-500': form.errors.porc_ips }"
                                     />
+                                    <span class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500">%</span>
                                 </div>
-                                <p class="text-xs text-gray-500 mt-1">Precio base de la prestación en pesos argentinos</p>
-                                <div v-if="form.errors.precio_general" class="text-red-500 text-sm mt-1">
-                                    {{ form.errors.precio_general }}
+                                <p class="text-xs text-gray-500 mt-1">Porcentaje aplicado sobre el valor IPS (puede ser negativo)</p>
+                                <div v-if="form.errors.porc_ips" class="text-red-500 text-sm mt-1">
+                                    {{ form.errors.porc_ips }}
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Valor IPS -->
-                        <div class="flex items-start gap-4">
-                            <label class="text-sm font-medium text-gray-700 dark:text-gray-300 w-32 flex-shrink-0 pt-2">
-                                Valor IPS
-                            </label>
-                            <div class="flex-1 max-w-xs">
-                                <div class="relative">
-                                    <span class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">$</span>
-                                    <input
-                                        v-model="form.valor_ips"
-                                        type="number"
-                                        step="0.01"
-                                        min="0"
-                                        placeholder="0"
-                                        class="w-full pl-8 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
-                                        :class="{ 'border-red-500': form.errors.valor_ips }"
-                                    />
-                                </div>
-                                <p class="text-xs text-gray-500 mt-1">Valor para Instituto de Previsión Social</p>
-                                <div v-if="form.errors.valor_ips" class="text-red-500 text-sm mt-1">
-                                    {{ form.errors.valor_ips }}
-                                </div>
-                            </div>
+                      <!-- Valor Referencia (Calculado) -->
+                      <div class="flex items-start gap-4">
+                        <label class="text-sm font-medium text-gray-700 dark:text-gray-300 w-32 flex-shrink-0 pt-2">
+                          Valor Referencia
+                        </label>
+                        <div class="flex-1 max-w-xs">
+                          <div class="relative">
+                            <span class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">$</span>
+                            <input
+                              :value="valorReferenciaCalculado"
+                              type="text"
+                              readonly
+                              class="w-full pl-8 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 cursor-not-allowed"
+                            />
+                          </div>
+                          <p class="text-xs text-gray-500 mt-1">
+                            Calculado automáticamente: Valor IPS {{ form.porc_ips >= 0 ? '+' : '' }}{{ form.porc_ips || 0 }}%
+                          </p>
                         </div>
+                      </div>
+
+
 
                         <!-- Preview de precios -->
-                        <div v-if="form.precio_general || form.valor_ips" class="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-                            <h4 class="text-sm font-medium text-blue-800 dark:text-blue-200 mb-2">Vista previa de precios:</h4>
+                        <div v-if="form.valor_ips" class="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                            <h4 class="text-sm font-medium text-blue-800 dark:text-blue-200 mb-2">Vista previa de cálculo:</h4>
                             <div class="text-sm text-blue-700 dark:text-blue-300 space-y-1">
-                                <div v-if="form.precio_general">Precio General: ${{ formatCurrency(form.precio_general) }}</div>
-                                <div v-if="form.valor_ips">Valor IPS: ${{ formatCurrency(form.valor_ips) }}</div>
+                                <div>Valor IPS: ${{ formatCurrency(form.valor_ips) }}</div>
+                                <div>Porcentaje IPS: {{ form.porc_ips >= 0 ? '+' : '' }}{{ form.porc_ips || 0 }}%</div>
+                                <div class="font-bold border-t border-blue-300 pt-1 mt-1">
+                                    Valor Referencia: ${{ formatCurrency(valorReferenciaCalculado) }}
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -249,7 +276,7 @@
 
                 <!-- Información Adicional -->
                 <div class="mb-8">
-                    <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-6 flex items-center">
+                    <h3 class="text-lg font-semibold text-white mb-4 flex items-center p-4 rounded-lg" style="background-color: #2D6660;">
                         <Icon :path="mdiNoteText" class="w-5 h-5 mr-2" />
                         Información Adicional
                     </h3>
@@ -346,8 +373,17 @@ const form = useForm({
     estado: 'activo', // Directamente el campo que espera el backend
     rubro_id: '',
     precio_general: '',
+    precio_afiliado: '',
     valor_ips: '',
+    porc_ips: 0,
     observaciones: ''
+})
+
+// Computed para calcular el valor de referencia automáticamente con redondeo estándar
+const valorReferenciaCalculado = computed(() => {
+    const valorIps = parseFloat(form.valor_ips) || 0
+    const porcIps = parseFloat(form.porc_ips) || 0
+    return Math.round(valorIps * (1 + (porcIps / 100)))
 })
 
 // Campo reactivo para el checkbox basado en estado
@@ -366,7 +402,8 @@ const isFormValid = computed(() => {
     return form.codigo &&
         form.nombre &&
         form.rubro_id &&
-        form.precio_general &&
+        form.valor_ips &&
+        form.porc_ips !== '' &&
         form.estado &&
         codigoStatus.value !== 'exists'
 })
@@ -436,16 +473,16 @@ const onCodigoChange = (event) => {
 }
 
 // Validar y limpiar campos numéricos
-watch(() => form.precio_general, (newValue) => {
-    if (newValue && newValue < 0) {
-        form.precio_general = 0
-    }
-})
-
 watch(() => form.valor_ips, (newValue) => {
     if (newValue && newValue < 0) {
         form.valor_ips = 0
     }
+})
+
+watch(() => form.porc_ips, (newValue) => {
+  if (newValue && newValue < -100) {
+    form.porc_ips = -100
+  }
 })
 
 const submit = () => {
@@ -453,7 +490,7 @@ const submit = () => {
     console.log('Datos del formulario:', form.data())
 
     // Verificar campos requeridos
-    if (!form.codigo || !form.nombre || !form.rubro_id || !form.precio_general) {
+    if (!form.codigo || !form.nombre || !form.rubro_id || !form.valor_ips || form.porc_ips === '') {
         alert('Por favor complete todos los campos requeridos')
         return
     }

@@ -18,13 +18,19 @@ class Plan extends Model
         'vigencia_desde',
         'vigencia_hasta',
         'estado',
-        'descripcion'
+        'descripcion',
+        'porc_salud',
+        'porc_odo',
+        'porc_ord'
     ];
 
     protected $casts = [
         'vigencia_desde' => 'date',
         'vigencia_hasta' => 'date',
-        'estado' => 'string'
+        'estado' => 'string',
+        'porc_salud' => 'decimal:2',
+        'porc_odo' => 'decimal:2',
+        'porc_ord' => 'decimal:2'
     ];
 
     public function prestaciones()
@@ -36,11 +42,28 @@ class Plan extends Model
                 'cant_max_individual',
                 'cant_max_grupo',
                 'estado',
-                'fecha_vigencia_desde',
-                'fecha_vigencia_hasta',
+                'fecha_desde',
+                'fecha_hasta',
                 'observaciones'
             ])
             ->withTimestamps();
+    }
+
+    public function sucursales()
+    {
+        return $this->belongsToMany(Sucursal::class, 'plan_sucursal')
+            ->withPivot([
+                'fecha_desde',
+                'fecha_hasta',
+                'estado',
+                'observaciones'
+            ])
+            ->withTimestamps();
+    }
+
+    public function itemsRequeridos()
+    {
+        return $this->hasMany(PlanItemRequerido::class);
     }
 
     public function scopeActivos($query)

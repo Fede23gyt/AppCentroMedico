@@ -81,7 +81,7 @@ return [
         'sqlsrv' => [
             'driver' => 'sqlsrv',
             'url' => env('DATABASE_URL'),
-            'host' => env('DB_HOST', 'localhost'),
+            'host' => env('DB_HOST', '127.0.0.1'),
             'port' => env('DB_PORT', '1433'),
             'database' => env('DB_DATABASE', 'forge'),
             'username' => env('DB_USERNAME', 'forge'),
@@ -89,8 +89,21 @@ return [
             'charset' => 'utf8',
             'prefix' => '',
             'prefix_indexes' => true,
-            // 'encrypt' => env('DB_ENCRYPT', 'yes'),
-            // 'trust_server_certificate' => env('DB_TRUST_SERVER_CERTIFICATE', 'false'),
+        ],
+
+        'sqlsrv_externa' => [
+            'driver' => 'sqlsrv',
+            'host' => env('DB_SQLSRV_HOST', '10.0.0.252'),
+            'port' => env('DB_SQLSRV_PORT', '1433'),
+            'database' => env('DB_SQLSRV_DATABASE', 'pievesalus'),
+            'username' => env('DB_SQLSRV_USERNAME', 'sa'),
+            'password' => env('DB_SQLSRV_PASSWORD', ''),
+            'charset' => 'utf8',
+            'prefix' => '',
+            'prefix_indexes' => true,
+            'options' => [
+                PDO::SQLSRV_ATTR_ENCODING => PDO::SQLSRV_ENCODING_UTF8,
+            ],
         ],
 
     ],

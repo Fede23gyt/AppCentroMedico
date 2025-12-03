@@ -5,20 +5,21 @@
       { '-translate-x-full': !isAsideMobileExpanded },
       { 'lg:-translate-x-full': !isAsideLgActive }
     ]"
-        class="bg-gray-800 -translate-x-full fixed top-0 left-0 z-40 w-60 transition-position lg:translate-x-0 h-screen"
+        class="-translate-x-full fixed top-0 left-0 z-40 w-60 transition-position lg:translate-x-0 h-screen"
+        style="background-color: #2D6660;"
     >
         <div
             :class="styleStore.asideBrandStyle"
-            class="flex flex-row h-14 items-center justify-between px-6 bg-gray-900"
+            class="flex flex-row h-14 items-center justify-between px-6"
+            style="background-color: #245651;"
         >
             <div class="text-center flex-1 lg:text-left lg:flex-none">
-                <div class="inline-flex items-center">
-                    <BaseIcon
-                        :path="mdiMonitor"
-                        class="text-blue-400 mr-2"
-                        size="32"
+                <div class="flex items-center justify-center w-full">
+                    <img
+                        src="/images/LogoPieveSalud.jpg"
+                        alt="Pieve Salud"
+                        class="h-12 w-auto rounded"
                     />
-                    <b class="font-black text-xl text-white">Sistema</b>
                 </div>
             </div>
             <button
