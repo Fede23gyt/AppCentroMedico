@@ -2,34 +2,34 @@
     <Head title="Nueva Orden" />
 
     <AuthenticatedLayout>
-        <div class="max-w-7xl mx-auto px-4 py-6">
+        <div class="max-w-full mx-auto px-3 py-3">
             <!-- Header -->
-            <div class="flex justify-between items-center mb-6">
+            <div class="flex justify-between items-center mb-3">
                 <div>
-                    <h1 class="text-2xl font-bold text-gray-900">Nueva Orden</h1>
-                    <p class="dark:text-gray-600">Crea una nueva orden de prestaciones</p>
+                    <h1 class="text-base font-semibold text-gray-900">Nueva Orden</h1>
+                    <p class="text-gray-500 text-xs mt-0.5">Crea una nueva orden de prestaciones</p>
                 </div>
                 <Link
                     :href="route('ordenes.index')"
-                    class="text-gray-600 hover:text-gray-900"
+                    class="text-gray-600 hover:text-gray-900 text-sm"
                 >
                     Volver
                 </Link>
             </div>
 
             <!-- Formulario -->
-            <form @submit.prevent="submit" class="space-y-6">
+            <form @submit.prevent="submit" class="space-y-3">
                 <!-- Sección 1: Búsqueda y Selección en 2 Columnas -->
-                <div v-if="!form.beneficiario_id" class="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+                <div v-if="!form.beneficiario_id" class="bg-white rounded-md shadow-sm border border-gray-100 p-3">
                     <!-- Búsqueda -->
-                    <div class="mb-4">
-                        <div class="flex items-center gap-3">
-                            <label class="text-sm font-medium text-gray-700 whitespace-nowrap">Certificado:</label>
+                    <div class="mb-2">
+                        <div class="flex items-center gap-2">
+                            <label class="text-xs font-medium text-gray-700 whitespace-nowrap">Certificado:</label>
                             <input
                                 ref="certificadoInput"
                                 v-model="certificadoBusqueda"
                                 type="text"
-                                class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                                class="flex-1 px-2.5 py-1.5 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                                 placeholder="Ingrese certificado"
                                 @keydown.enter.prevent="buscarAfiliados"
                                 @keydown.down.prevent="() => {}"
@@ -37,23 +37,23 @@
                             <button
                                 type="button"
                                 @click="buscarAfiliados"
-                                class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md transition-colors text-sm"
+                                class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-md transition-colors text-sm"
                             >
                                 Buscar
                             </button>
                         </div>
-                        <div v-if="errorBusqueda" class="mt-2 text-sm text-red-600">{{ errorBusqueda }}</div>
+                        <div v-if="errorBusqueda" class="mt-1 text-xs text-red-600">{{ errorBusqueda }}</div>
                     </div>
 
                     <!-- Layout en 2 columnas: Titular | Beneficiario -->
-                    <div v-if="titulares.length > 0" class="grid grid-cols-2 gap-4">
+                    <div v-if="titulares.length > 0" class="grid grid-cols-2 gap-2">
                         <!-- Columna 1: Titular -->
-                        <div class="border-r pr-4">
-                            <h3 class="text-sm font-semibold text-gray-700 mb-2">1. Titular</h3>
+                        <div class="border-r pr-2">
+                            <h3 class="text-xs font-semibold text-gray-700 mb-1">1. Titular</h3>
                             <div
                                 v-for="(titular, index) in titulares"
                                 :key="titular.id"
-                                class="p-2 border rounded cursor-pointer mb-2 text-sm transition-colors"
+                                class="p-1.5 border rounded cursor-pointer mb-1 text-xs transition-colors"
                                 :class="{
                                     'bg-green-100 border-green-400': titularSeleccionado?.id === titular.id,
                                     'hover:bg-gray-50': titularSeleccionado?.id !== titular.id
@@ -61,21 +61,21 @@
                                 @click="seleccionarTitular(titular)"
                             >
                                 <div class="font-medium text-gray-900">{{ titular.apellido }}, {{ titular.nombre }}</div>
-                                <div class="text-xs text-gray-600">
+                                <div class="text-[11px] text-gray-600">
                                     DNI: {{ titular.dni }} | Plan: {{ titular.plan?.nombre }}
                                 </div>
                             </div>
                         </div>
 
                         <!-- Columna 2: Beneficiario -->
-                        <div class="pl-4">
-                            <h3 class="text-sm font-semibold text-gray-700 mb-2">2. Beneficiario (Persona a Atender)</h3>
+                        <div class="pl-2">
+                            <h3 class="text-xs font-semibold text-gray-700 mb-1">2. Beneficiario (Persona a Atender)</h3>
                             <div v-if="titularSeleccionado" class="space-y-1">
                                 <div
                                     v-for="(afiliado, index) in afiliados"
                                     :key="afiliado.id"
                                     :ref="el => { if (el) afiliadoRefs[index] = el }"
-                                    class="p-2 border rounded cursor-pointer text-sm transition-colors"
+                                    class="p-1.5 border rounded cursor-pointer text-xs transition-colors"
                                     :class="{
                                         'bg-green-200 border-green-400': selectedBeneficiarioIndex === index,
                                         'hover:bg-gray-50': selectedBeneficiarioIndex !== index
@@ -87,12 +87,12 @@
                                     tabindex="0"
                                 >
                                     <div class="font-medium text-gray-900">{{ afiliado.apellido }}, {{ afiliado.nombre }}</div>
-                                    <div class="text-xs text-gray-600">
+                                    <div class="text-[11px] text-gray-600">
                                         DNI: {{ afiliado.dni }} | {{ afiliado.vinculo_texto }}
                                     </div>
                                 </div>
                             </div>
-                            <div v-else class="text-sm text-gray-500 italic">
+                            <div v-else class="text-xs text-gray-500 italic">
                                 Seleccione un titular primero
                             </div>
                         </div>
@@ -100,29 +100,29 @@
                 </div>
 
                 <!-- Titular y Beneficiario seleccionados (compacto) -->
-                <div v-else class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                    <div class="space-y-3">
+                <div v-else class="bg-white rounded-md shadow-sm border border-gray-100 p-3">
+                    <div class="space-y-2">
                         <div class="flex justify-between items-start">
                             <div class="flex-1">
-                                <h3 class="text-sm font-semibold text-gray-700 mb-1">Titular:</h3>
-                                <p class="font-medium text-gray-900">{{ titularSeleccionado?.apellido }}, {{ titularSeleccionado?.nombre }}</p>
-                                <p class="text-sm text-gray-600">
+                                <h3 class="text-xs font-semibold text-gray-700 mb-0.5">Titular:</h3>
+                                <p class="font-medium text-gray-900 text-sm">{{ titularSeleccionado?.apellido }}, {{ titularSeleccionado?.nombre }}</p>
+                                <p class="text-xs text-gray-600">
                                     Certificado: {{ titularSeleccionado?.certificado }} | Plan: {{ titularSeleccionado?.plan?.nombre }}
                                 </p>
                             </div>
                         </div>
-                        <div class="border-t pt-3 flex justify-between items-start">
+                        <div class="border-t pt-2 flex justify-between items-start">
                             <div class="flex-1">
-                                <h3 class="text-sm font-semibold text-gray-700 mb-1">Beneficiario (a Atender):</h3>
-                                <p class="font-medium text-gray-900">{{ beneficiarioSeleccionado?.apellido }}, {{ beneficiarioSeleccionado?.nombre }}</p>
-                                <p class="text-sm text-gray-600">
+                                <h3 class="text-xs font-semibold text-gray-700 mb-0.5">Beneficiario (a Atender):</h3>
+                                <p class="font-medium text-gray-900 text-sm">{{ beneficiarioSeleccionado?.apellido }}, {{ beneficiarioSeleccionado?.nombre }}</p>
+                                <p class="text-xs text-gray-600">
                                     DNI: {{ beneficiarioSeleccionado?.dni }} | {{ beneficiarioSeleccionado?.vinculo_texto }}
                                 </p>
                             </div>
                             <button
                                 type="button"
                                 @click="cambiarBeneficiario"
-                                class="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                                class="text-blue-600 hover:text-blue-800 text-xs font-medium"
                             >
                                 Cambiar
                             </button>
@@ -131,13 +131,13 @@
                 </div>
 
                 <!-- Sección 2: Datos de la Orden (Compacto) -->
-                <div v-if="form.beneficiario_id" class="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-                    <div class="flex items-center gap-4">
-                        <label class="text-sm font-medium text-gray-700 whitespace-nowrap">Prestador:</label>
+                <div v-if="form.beneficiario_id" class="bg-white rounded-md shadow-sm border border-gray-100 p-2">
+                    <div class="flex items-center gap-2">
+                        <label class="text-xs font-medium text-gray-700 whitespace-nowrap">Prestador:</label>
                         <select
                             ref="prestadorInput"
                             v-model="form.prestador_id"
-                            class="flex-1 px-3 py-2 border-2 border-custom-teal-500 rounded-md focus:outline-none focus:ring-2 focus:ring-custom-teal-600 text-sm"
+                            class="flex-1 px-2.5 py-1.5 border-2 border-custom-teal-500 rounded-md focus:outline-none focus:ring-2 focus:ring-custom-teal-600 text-sm"
                             @keydown.enter.prevent="focusPrestacion"
                         >
                             <option value="">Sin asignar</option>
@@ -149,18 +149,18 @@
                 </div>
 
                 <!-- Sección 3: Prestaciones -->
-                <div v-if="form.beneficiario_id" class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                    <h2 class="text-lg font-semibold text-gray-900 mb-4">3. Prestaciones</h2>
+                <div v-if="form.beneficiario_id" class="bg-white rounded-md shadow-sm border border-gray-100 p-3">
+                    <h2 class="text-sm font-semibold text-gray-900 mb-2">3. Prestaciones</h2>
 
                     <!-- Búsqueda de prestación -->
-                    <div class="mb-4">
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Buscar Prestación</label>
+                    <div class="mb-2">
+                        <label class="block text-xs font-medium text-gray-700 mb-1">Buscar Prestación</label>
                         <div class="flex gap-2">
                             <input
                                 ref="prestacionInput"
                                 v-model="prestacionBusqueda"
                                 type="text"
-                                class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                class="flex-1 px-2.5 py-1.5 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                                 placeholder="Código o descripción de prestación..."
                                 @input="buscarPrestaciones"
                                 @keydown.down.prevent="navegarPrestaciones(0)"
@@ -169,13 +169,13 @@
                         </div>
 
                         <!-- Resultados búsqueda prestaciones -->
-                        <div v-if="prestacionesDisponibles.length > 0" class="mt-2 border border-gray-300 rounded-md max-h-60 overflow-y-auto">
+                        <div v-if="prestacionesDisponibles.length > 0" class="mt-1 border border-gray-200 rounded max-h-60 overflow-y-auto">
                             <button
                                 v-for="(prestacion, index) in prestacionesDisponibles"
                                 :key="prestacion.id"
                                 :ref="el => { if (el) prestacionRefs[index] = el }"
                                 type="button"
-                                class="w-full text-left px-4 py-2 border-b last:border-b-0 transition-colors"
+                                class="w-full text-left px-2 py-1.5 border-b last:border-b-0 transition-colors"
                                 :class="{
                                     'bg-blue-500': selectedPrestacionIndex === index,
                                     'hover:bg-blue-50 bg-white': selectedPrestacionIndex !== index
@@ -186,10 +186,10 @@
                                 @keydown.enter.prevent="agregarPrestacion(prestacion)"
                                 tabindex="0"
                             >
-                                <div class="font-medium" :class="selectedPrestacionIndex === index ? 'text-white' : 'text-gray-900'">
+                                <div class="font-medium text-xs" :class="selectedPrestacionIndex === index ? 'text-white' : 'text-gray-900'">
                                     {{ prestacion.codigo }} - {{ prestacion.descripcion }}
                                 </div>
-                                <div class="text-sm" :class="selectedPrestacionIndex === index ? 'text-white' : 'text-gray-600'">
+                                <div class="text-[11px]" :class="selectedPrestacionIndex === index ? 'text-white' : 'text-gray-600'">
                                     Precio: ${{ prestacion.precio_plan }}
                                 </div>
                             </button>
@@ -197,47 +197,47 @@
                     </div>
 
                     <!-- Lista de prestaciones agregadas -->
-                    <div v-if="form.detalles.length > 0" class="mt-4">
-                        <table class="min-w-full divide-y divide-gray-200">
-                            <thead class="bg-gray-700">
+                    <div v-if="form.detalles.length > 0" class="mt-2">
+                        <table class="min-w-full divide-y divide-gray-100">
+                            <thead class="bg-gray-50">
                                 <tr>
-                                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-200 uppercase">Prestación</th>
-                                    <th class="px-4 py-2 text-center text-xs font-medium text-gray-200 uppercase" style="width: 100px;">Cantidad</th>
-                                    <th class="px-4 py-2 text-right text-xs font-medium text-gray-200 uppercase" style="width: 120px;">Precio Unit.</th>
-                                    <th class="px-4 py-2 text-right text-xs font-medium text-gray-200 uppercase" style="width: 120px;">Total</th>
-                                    <th class="px-4 py-2" style="width: 50px;"></th>
+                                    <th class="px-2 py-1.5 text-left text-[11px] font-semibold text-gray-600 uppercase">Prestación</th>
+                                    <th class="px-2 py-1.5 text-center text-[11px] font-semibold text-gray-600 uppercase" style="width: 100px;">Cantidad</th>
+                                    <th class="px-2 py-1.5 text-right text-[11px] font-semibold text-gray-600 uppercase" style="width: 120px;">Precio Unit.</th>
+                                    <th class="px-2 py-1.5 text-right text-[11px] font-semibold text-gray-600 uppercase" style="width: 120px;">Total</th>
+                                    <th class="px-2 py-1.5" style="width: 50px;"></th>
                                 </tr>
                             </thead>
-                            <tbody class="bg-white divide-y divide-gray-200">
+                            <tbody class="bg-white divide-y divide-gray-100">
                                 <tr v-for="(detalle, index) in form.detalles" :key="index">
-                                    <td class="px-4 py-3">
-                                        <div class="text-sm font-medium text-gray-900">{{ detalle.codigo }} - {{ detalle.descripcion }}</div>
+                                    <td class="px-2 py-1.5">
+                                        <div class="text-xs font-medium text-gray-900">{{ detalle.codigo }} - {{ detalle.descripcion }}</div>
                                     </td>
-                                    <td class="px-4 py-3 text-center">
+                                    <td class="px-2 py-1.5 text-center">
                                         <input
                                             :ref="el => { if (el) cantidadInputs[index] = el }"
                                             v-model.number="detalle.cantidad"
                                             type="number"
                                             min="1"
-                                            class="w-20 px-2 py-1 border border-gray-300 rounded text-sm text-center focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                            class="w-16 px-1.5 py-1 border border-gray-200 rounded text-xs text-center focus:outline-none focus:ring-2 focus:ring-blue-500"
                                             @input="calcularTotalesDetalle(index)"
                                             @keydown.enter.prevent="focusPrestacion"
                                         />
                                     </td>
-                                    <td class="px-4 py-3 text-sm text-right text-gray-700">
+                                    <td class="px-2 py-1.5 text-xs text-right text-gray-700">
                                         ${{ parseFloat(detalle.importe_uni).toFixed(2) }}
                                     </td>
-                                    <td class="px-4 py-3 text-sm font-bold text-right text-gray-900">
+                                    <td class="px-2 py-1.5 text-xs font-bold text-right text-gray-900">
                                         ${{ parseFloat(detalle.importe_total).toFixed(2) }}
                                     </td>
-                                    <td class="px-4 py-3 text-center">
+                                    <td class="px-2 py-1.5 text-center">
                                         <button
                                             type="button"
                                             @click="eliminarPrestacion(index)"
                                             class="text-red-600 hover:text-red-900 transition-colors"
                                             title="Eliminar prestación"
                                         >
-                                            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
                                             </svg>
                                         </button>
@@ -247,35 +247,35 @@
                         </table>
 
                         <!-- Total -->
-                        <div class="mt-6 flex justify-end">
-                            <div class="bg-gray-50 rounded-lg px-6 py-4 border-2 border-gray-300">
-                                <div class="flex items-center gap-4">
-                                    <span class="text-lg font-bold text-gray-700">TOTAL:</span>
-                                    <span class="text-2xl font-bold text-blue-600">${{ calcularTotal() }}</span>
+                        <div class="mt-3 flex justify-end">
+                            <div class="bg-gray-50 rounded-md px-3 py-2 border-2 border-gray-300">
+                                <div class="flex items-center gap-2">
+                                    <span class="text-sm font-bold text-gray-700">TOTAL:</span>
+                                    <span class="text-base font-bold text-blue-600">${{ calcularTotal() }}</span>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <div v-else class="text-center py-8 text-gray-500">
+                    <div v-else class="text-center py-4 text-gray-500 text-xs">
                         No se han agregado prestaciones
                     </div>
 
-                    <span v-if="form.errors.detalles" class="text-sm text-red-600">{{ form.errors.detalles }}</span>
+                    <span v-if="form.errors.detalles" class="text-xs text-red-600">{{ form.errors.detalles }}</span>
                 </div>
 
                 <!-- Botones de acción -->
-                <div v-if="form.beneficiario_id" class="flex justify-end gap-3">
+                <div v-if="form.beneficiario_id" class="flex justify-end gap-2">
                     <Link
                         :href="route('ordenes.index')"
-                        class="px-4 py-2 border border-red-300 rounded-md text-red-600 hover:bg-red-50 hover:border-red-400"
+                        class="px-3 py-1.5 border border-red-300 rounded-md text-red-600 hover:bg-red-50 hover:border-red-400 text-sm"
                     >
                         Cancelar
                     </Link>
                     <button
                         type="submit"
                         :disabled="form.processing || form.detalles.length === 0"
-                        class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-md font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-1.5 rounded-md font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm"
                     >
                         {{ form.processing ? 'Guardando...' : 'Guardar Orden' }}
                     </button>

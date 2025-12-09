@@ -5,6 +5,7 @@
             v-for="(item, index) in menu"
             :key="index"
             :item="item"
+            :is-collapsed="isCollapsed"
             @menu-click="$emit('menu-click', $event)"
         />
     </ul>
@@ -17,6 +18,10 @@ defineProps({
     menu: {
         type: Array,
         default: () => []
+    },
+    isCollapsed: {
+        type: Boolean,
+        default: false
     }
 })
 

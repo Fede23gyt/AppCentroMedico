@@ -2,39 +2,41 @@
     <aside
         :class="[
       styleStore.asideStyle,
-      { '-translate-x-full': !isAsideMobileExpanded },
-      { 'lg:-translate-x-full': !isAsideLgActive }
+      isAsideMobileExpanded ? 'w-60' : 'w-16'
     ]"
-        class="-translate-x-full fixed top-0 left-0 z-40 w-60 transition-position lg:translate-x-0 h-screen"
+        class="fixed top-0 left-0 z-40 transition-all duration-300 h-screen"
         style="background-color: #2D6660;"
     >
         <div
             :class="styleStore.asideBrandStyle"
-            class="flex flex-row h-14 items-center justify-between px-6"
+            class="flex flex-row h-14 items-center justify-center"
             style="background-color: #245651;"
         >
-            <div class="text-center flex-1 lg:text-left lg:flex-none">
-                <div class="flex items-center justify-center w-full">
-                    <img
-                        src="/images/LogoPieveSalud.jpg"
-                        alt="Pieve Salud"
-                        class="h-12 w-auto rounded"
-                    />
-                </div>
+            <!-- Logo completo cuando está expandido -->
+            <div v-if="isAsideMobileExpanded" class="flex items-center justify-center px-4">
+                <img
+                    src="/images/LogoPieveSalud.jpg"
+                    alt="Pieve Salud"
+                    class="h-10 w-auto rounded"
+                />
             </div>
-            <button
-                class="hidden lg:inline-block xl:hidden p-3"
-                @click.prevent="$emit('aside-lg-close-click')"
-            >
-                <BaseIcon :path="mdiClose" />
-            </button>
+            <!-- Logo mini cuando está colapsado -->
+            <div v-else class="flex items-center justify-center">
+                <img
+                    src="/images/LogoPieveSalud.jpg"
+                    alt="Pieve Salud"
+                    class="h-8 w-8 rounded object-cover"
+                />
+            </div>
         </div>
+
         <div
             :class="styleStore.asideScrollbarsStyle"
             class="flex-1 overflow-y-auto overflow-x-hidden aside-scrollbars-gray"
         >
             <AsideMenuList
                 :menu="menu"
+                :is-collapsed="!isAsideMobileExpanded"
                 @menu-click="$emit('menu-click', $event)"
             />
         </div>

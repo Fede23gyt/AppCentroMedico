@@ -4,30 +4,36 @@
             :is="componentIs"
             :href="item.to"
             :target="item.target ?? null"
-            class="flex cursor-pointer transition-colors duration-200"
-            :class="componentClass"
+            class="flex cursor-pointer transition-colors duration-200 relative group"
+            :class="[componentClass, isCollapsed && depth === 0 ? 'justify-center px-2' : '']"
             @click="menuClick"
+            :title="isCollapsed && depth === 0 ? item.label : ''"
         >
             <BaseIcon
                 v-if="item.icon"
                 :path="item.icon"
-                class="flex-none mr-3 text-gray-400"
-                :size="18"
+                :class="['flex-none text-gray-400', isCollapsed && depth === 0 ? '' : 'mr-2']"
+                :size="20"
             />
-            <span class="grow text-ellipsis line-clamp-1" :class="{ 'submenu-indicator': depth > 0 && !hasDropdown }">
-        {{ item.label }}
-      </span>
+            <span v-if="!isCollapsed || depth > 0" class="grow text-ellipsis line-clamp-1" :class="{ 'submenu-indicator': depth > 0 && !hasDropdown }">
+                {{ item.label }}
+            </span>
             <BaseIcon
-                v-if="hasDropdown"
+                v-if="hasDropdown && !isCollapsed"
                 :path="isDropdownActive ? mdiChevronUp : mdiChevronDown"
                 class="flex-none text-gray-400 transition-transform"
                 :size="16"
             />
+
+            <!-- Tooltip cuando está colapsado -->
+            <div v-if="isCollapsed && depth === 0" class="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
+                {{ item.label }}
+            </div>
         </component>
 
-        <!-- Submenú -->
+        <!-- Submenú (oculto cuando está colapsado) -->
         <div
-            v-if="hasDropdown"
+            v-if="hasDropdown && !isCollapsed"
             :class="[
         'transition-all duration-300 overflow-hidden',
         isDropdownActive ? 'max-h-screen opacity-100' : 'max-h-0 opacity-0'
@@ -38,6 +44,7 @@
                     v-for="(subItem, index) in item.menu"
                     :key="index"
                     :item="subItem"
+                    :is-collapsed="isCollapsed"
                     is-dropdown-list
                     :depth="depth + 1"
                     @menu-click="$emit('menu-click', $event)"
@@ -65,6 +72,10 @@ const props = defineProps({
     depth: {
         type: Number,
         default: 0
+    },
+    isCollapsed: {
+        type: Boolean,
+        default: false
     }
 })
 
@@ -98,7 +109,7 @@ const componentClass = computed(() => {
     // Estilos base según el nivel
     if (props.depth === 0) {
         // Nivel principal
-        base.push('text-gray-300 hover:text-white px-6 py-3')
+        base.push('text-gray-300 hover:text-white px-4 py-2 text-sm')
         if (props.item.to && typeof window !== 'undefined' && window.location.pathname === props.item.to) {
             base.push('text-white')
             // Aplicar color hover inline
@@ -108,7 +119,7 @@ const componentClass = computed(() => {
         }
     } else if (props.depth === 1) {
         // Primer nivel de submenú
-        base.push('text-gray-300 px-4 py-2 text-sm')
+        base.push('text-gray-300 px-3 py-1.5 text-xs')
         base.push('border-l-2 border-transparent')
         if (hasDropdown.value) {
             base.push('font-medium text-gray-200')
@@ -120,8 +131,8 @@ const componentClass = computed(() => {
         }
     } else {
         // Segundo nivel de submenú y más profundos
-        base.push('text-gray-400 py-2 text-xs')
-        base.push('pl-8') // Indentación fija para segundo nivel
+        base.push('text-gray-400 py-1.5 text-xs')
+        base.push('pl-6') // Indentación fija para segundo nivel
         base.push('border-l-2 border-transparent')
         if (props.item.to && typeof window !== 'undefined' && window.location.pathname === props.item.to) {
             base.push('text-white submenu-nested-active')

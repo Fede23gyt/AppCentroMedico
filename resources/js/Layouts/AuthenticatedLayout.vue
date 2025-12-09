@@ -12,18 +12,6 @@
       ]"
             @menu-click="menuClick"
         >
-            <NavBarItemPlain
-                display="flex lg:hidden"
-                @click.prevent="menuToggle"
-            >
-                <BaseIcon :path="mdiForwardburger" size="24" />
-            </NavBarItemPlain>
-            <NavBarItemPlain
-                display="hidden lg:flex xl:hidden"
-                @click.prevent="menuToggle"
-            >
-                <BaseIcon :path="mdiMenu" size="24" />
-            </NavBarItemPlain>
             <NavBarItemPlain use-margin>
                 <FormControl
                     placeholder="Buscar (ctrl+k)"
@@ -63,7 +51,7 @@ import NavBar from '@/components/NavBar.vue'
 import NavBarItemPlain from '@/components/NavBarItemPlain.vue'
 import AsideMenu from '@/components/AsideMenu.vue'
 import FooterBar from '@/components/FooterBar.vue'
-import { mdiForwardburger, mdiMenu } from '@mdi/js'
+import { mdiForwardburger, mdiMenu, mdiChevronLeft, mdiChevronRight } from '@mdi/js'
 import menuAside from '@/menuAside.js'
 import menuNavBar from '@/menuNavBar.js'
 import { router } from '@inertiajs/vue3'
@@ -71,10 +59,12 @@ import { router } from '@inertiajs/vue3'
 const mainStore = useMainStore()
 const styleStore = useStyleStore()
 
-const layoutAsidePadding = 'xl:pl-60'
-
-const isAsideMobileExpanded = ref(false)
+const isAsideMobileExpanded = ref(true) // Start with sidebar visible
 const isAsideLgActive = ref(false)
+
+const layoutAsidePadding = computed(() =>
+    isAsideMobileExpanded.value ? 'xl:pl-60' : 'xl:pl-16'
+)
 
 // Declarar funciones ANTES de usarlas
 const layoutResizeHandler = () => {
@@ -87,6 +77,11 @@ const menuToggle = () => {
 
 const menuClick = (event, item) => {
     if (!item) return
+
+    if (item.isToggleSidebar) {
+        menuToggle()
+        return
+    }
 
     if (item.isToggleLightDark) {
         styleStore.setDarkMode()

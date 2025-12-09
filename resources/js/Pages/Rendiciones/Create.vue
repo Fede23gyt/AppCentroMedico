@@ -2,32 +2,32 @@
     <Head title="Nueva Rendición" />
 
     <AuthenticatedLayout>
-        <div class="max-w-4xl mx-auto px-4 py-6">
+        <div class="max-w-full mx-auto px-3 py-3">
             <!-- Header -->
-            <div class="flex justify-between items-center mb-6">
+            <div class="flex justify-between items-center mb-3">
                 <div>
-                    <h1 class="text-2xl font-bold text-gray-900">Nueva Rendición</h1>
-                    <p class="text-gray-200">Crea una nueva rendición de prestador</p>
+                    <h1 class="text-base font-semibold text-gray-900">Nueva Rendición</h1>
+                    <p class="text-gray-500 text-xs mt-0.5">Crea una nueva rendición de prestador</p>
                 </div>
                 <Link
                     :href="route('rendiciones.index')"
-                    class="text-gray-200 hover:text-gray-900 font-medium"
+                    class="text-gray-600 hover:text-gray-900 font-medium text-sm"
                 >
                     ← Volver
                 </Link>
             </div>
 
             <!-- Formulario -->
-            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <div class="bg-white rounded-md shadow-sm border border-gray-100 p-3">
                 <form @submit.prevent="submit">
                     <!-- Prestador -->
-                    <div class="mb-6">
-                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                    <div class="mb-3">
+                        <label class="block text-xs font-medium text-gray-700 mb-1">
                             Prestador <span class="text-red-500">*</span>
                         </label>
                         <select
                             v-model="form.prestador_id"
-                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            class="w-full px-2.5 py-1.5 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                             :class="{ 'border-red-500': form.errors.prestador_id }"
                             required
                         >
@@ -36,45 +36,45 @@
                                 {{ prestador.apellido }}, {{ prestador.nombre }}
                             </option>
                         </select>
-                        <p v-if="form.errors.prestador_id" class="mt-1 text-sm text-red-600">
+                        <p v-if="form.errors.prestador_id" class="mt-1 text-xs text-red-600">
                             {{ form.errors.prestador_id }}
                         </p>
                     </div>
 
                     <!-- Observación -->
-                    <div class="mb-6">
-                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                    <div class="mb-3">
+                        <label class="block text-xs font-medium text-gray-700 mb-1">
                             Observación
                         </label>
                         <textarea
                             v-model="form.observacion"
                             rows="3"
-                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            class="w-full px-2.5 py-1.5 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                             :class="{ 'border-red-500': form.errors.observacion }"
                             placeholder="Observaciones adicionales (opcional)"
                         ></textarea>
-                        <p v-if="form.errors.observacion" class="mt-1 text-sm text-red-600">
+                        <p v-if="form.errors.observacion" class="mt-1 text-xs text-red-600">
                             {{ form.errors.observacion }}
                         </p>
                     </div>
 
                     <!-- Mensaje de error general -->
-                    <div v-if="form.errors.error" class="mb-4 p-3 bg-red-50 border border-red-200 rounded-md">
-                        <p class="text-sm text-red-800">{{ form.errors.error }}</p>
+                    <div v-if="form.errors.error" class="mb-2 p-2 bg-red-50 border border-red-200 rounded-md">
+                        <p class="text-xs text-red-800">{{ form.errors.error }}</p>
                     </div>
 
                     <!-- Botones -->
-                    <div class="flex justify-end gap-3">
+                    <div class="flex justify-end gap-2">
                         <Link
                             :href="route('rendiciones.index')"
-                            class="px-4 py-2 bg-gray-300 hover:bg-gray-400 text-gray-800 rounded-md transition-colors"
+                            class="px-3 py-1.5 bg-gray-300 hover:bg-gray-400 text-gray-800 rounded-md transition-colors text-sm"
                         >
                             Cancelar
                         </Link>
                         <button
                             type="submit"
                             :disabled="form.processing || !form.prestador_id"
-                            class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
+                            class="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed text-sm"
                         >
                             <span v-if="form.processing">Creando...</span>
                             <span v-else>Crear Rendición</span>
@@ -84,9 +84,9 @@
             </div>
 
             <!-- Información adicional -->
-            <div class="mt-4 bg-blue-50 border border-blue-200 rounded-md p-4">
-                <h3 class="text-sm font-medium text-blue-800 mb-2">Información</h3>
-                <ul class="text-sm text-blue-700 space-y-1">
+            <div class="mt-2 bg-blue-50 border border-blue-200 rounded-md p-2">
+                <h3 class="text-xs font-medium text-blue-800 mb-1">Información</h3>
+                <ul class="text-xs text-blue-700 space-y-0.5">
                     <li>• La rendición se creará en estado "Abierta"</li>
                     <li>• Podrás agregar órdenes una vez creada la rendición</li>
                     <li>• Solo se pueden agregar órdenes pagadas</li>
