@@ -9,12 +9,26 @@
                     <h1 class="text-2xl font-bold text-gray-200">Gestión de Prestaciones</h1>
                     <p class="text-gray-200">Administra las prestaciones médicas del sistema</p>
                 </div>
-                <Link
-                    :href="route('prestaciones.create')"
-                    class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md font-medium transition-colors"
-                >
-                    + Nueva Prestación
-                </Link>
+                <div class="flex gap-2">
+                    <!-- Botón oculto para subir archivo -->
+                    <input type="file" ref="fileInput" class="hidden" accept=".csv" @change="handleFileUpload" />
+                    
+                    <button
+                        @click="$refs.fileInput.click()"
+                        class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md font-medium transition-colors flex items-center gap-2"
+                        title="Importar Precios desde CSV"
+                    >
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+                        Importar Precios
+                    </button>
+
+                    <Link
+                        :href="route('prestaciones.create')"
+                        class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md font-medium transition-colors"
+                    >
+                        + Nueva Prestación
+                    </Link>
+                </div>
             </div>
 
             <!-- Filtros -->
@@ -103,13 +117,16 @@
                                     Estado
                                 </th>
                                 <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-gray-200 uppercase tracking-wider">
-                                    Valor Ref
+                                    Precio 1
                                 </th>
                                 <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-gray-200 uppercase tracking-wider">
-                                    % IPS
+                                    Precio 2
                                 </th>
                                 <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-gray-200 uppercase tracking-wider">
-                                    Planes
+                                    Precio 3
+                                </th>
+                                <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-gray-200 uppercase tracking-wider">
+                                    Precio 4
                                 </th>
                                 <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-gray-200 uppercase tracking-wider">
                                     Opciones
@@ -165,25 +182,24 @@
                                     </span>
                                 </td>
 
-                                <!-- Columna Valor Referencia -->
-                                <td class="px-6 py-4 whitespace-nowrap text-center">
-                                    <div class="text-sm font-semibold text-gray-900">
-                                        {{ formatCurrency(prestacion.val_ref || 0) }}
-                                    </div>
+                                <!-- Columna Precio 1 -->
+                                <td class="px-6 py-4 whitespace-nowrap text-center text-sm">
+                                    {{ formatCurrency(prestacion.precio_1 || 0) }}
                                 </td>
 
-                                <!-- Columna Porcentaje IPS -->
-                                <td class="px-6 py-4 whitespace-nowrap text-center">
-                                    <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold bg-purple-100 text-purple-800">
-                                        {{ prestacion.porc_ips || 0 }}%
-                                    </span>
+                                <!-- Columna Precio 2 -->
+                                <td class="px-6 py-4 whitespace-nowrap text-center text-sm">
+                                    {{ formatCurrency(prestacion.precio_2 || 0) }}
                                 </td>
 
-                                <!-- Columna Planes -->
-                                <td class="px-6 py-4 whitespace-nowrap text-center">
-                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
-                                        {{ prestacion.planes_count || 0 }}
-                                    </span>
+                                <!-- Columna Precio 3 -->
+                                <td class="px-6 py-4 whitespace-nowrap text-center text-sm">
+                                    {{ formatCurrency(prestacion.precio_3 || 0) }}
+                                </td>
+
+                                <!-- Columna Precio 4 -->
+                                <td class="px-6 py-4 whitespace-nowrap text-center text-sm">
+                                    {{ formatCurrency(prestacion.precio_4 || 0) }}
                                 </td>
 
                                 <!-- Columna Opciones -->
@@ -379,6 +395,7 @@
 import { Head, Link, router } from '@inertiajs/vue3'
 import { ref, reactive } from 'vue'
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue'
+import Swal from 'sweetalert2'
 
 const props = defineProps({
     prestaciones: Object,
@@ -396,6 +413,120 @@ const filters = reactive({
     rubro_id: props.filters?.rubro_id || '',
     estado: props.filters?.estado || '',
 })
+
+// Variables para Importar CSV
+const fileInput = ref(null)
+
+// Helpers CSV
+const parseCsvAmount = (val) => {
+    if (!val) return 0
+    const clean = val.replace(/\./g, '').replace(',', '.')
+    return parseFloat(clean) || 0
+}
+
+const parseCsv = (text) => {
+    const lines = text.split('\n').filter(l => l.trim())
+    if (lines.length < 2) return null
+    const headers = lines[0].split(';').map(h => h.trim())
+    const idxCodigo  = headers.indexOf('CODIGO')
+    const idxP1      = headers.indexOf('Precio1')
+    const idxP2      = headers.indexOf('Precio2')
+    const idxP3      = headers.indexOf('Precio3')
+    const idxP4      = headers.indexOf('Precio4')
+    if ([idxCodigo, idxP1, idxP2, idxP3, idxP4].includes(-1)) return null
+    const rows = []
+    for (let i = 1; i < lines.length; i++) {
+        const cols = lines[i].split(';')
+        if (!cols[idxCodigo]?.trim()) continue
+        rows.push({
+            codigo:   cols[idxCodigo].trim().padStart(6, '0'),
+            precio_1: parseCsvAmount(cols[idxP1]),
+            precio_2: parseCsvAmount(cols[idxP2]),
+            precio_3: parseCsvAmount(cols[idxP3]),
+            precio_4: parseCsvAmount(cols[idxP4]),
+        })
+    }
+    return rows
+}
+
+const handleFileUpload = async (event) => {
+    const file = event.target.files[0]
+    if (!file) return
+
+    // Leer CSV en el navegador
+    const text = await file.text()
+    const rows = parseCsv(text)
+
+    if (!rows) {
+        Swal.fire({ icon: 'error', title: 'Formato Inválido', text: 'No se encontraron las columnas requeridas (CODIGO, Precio1, Precio2, Precio3, Precio4) o el separador no es punto y coma.' })
+        fileInput.value.value = null
+        return
+    }
+
+    const CHUNK_SIZE = 50
+    const totalRows  = rows.length
+    let procesados   = 0
+    let actualizados = 0
+
+    // Mostrar modal con barra de progreso
+    Swal.fire({
+        title: 'Importando Precios',
+        html: `
+            <p class="mb-2 text-sm text-gray-600">Procesando <strong>${totalRows}</strong> registros...</p>
+            <div class="w-full bg-gray-200 rounded-full h-4 mb-2">
+                <div id="swal-progress-bar" class="bg-green-500 h-4 rounded-full transition-all duration-300" style="width: 0%"></div>
+            </div>
+            <p id="swal-progress-text" class="text-xs text-gray-500">0 / ${totalRows} (0%)</p>
+        `,
+        allowOutsideClick: false,
+        showConfirmButton: false,
+    })
+
+    const updateProgress = (done, total) => {
+        const pct = Math.round((done / total) * 100)
+        const bar = document.getElementById('swal-progress-bar')
+        const txt = document.getElementById('swal-progress-text')
+        if (bar) bar.style.width = `${pct}%`
+        if (txt) txt.textContent = `${done} / ${total} (${pct}%)`
+    }
+
+    // Obtener CSRF token para axios
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
+
+    try {
+        for (let i = 0; i < totalRows; i += CHUNK_SIZE) {
+            const chunk = rows.slice(i, i + CHUNK_SIZE)
+
+            const response = await axios.post(route('prestaciones.importar-precios-lote'), { rows: chunk }, {
+                headers: { 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' }
+            })
+
+            if (!response.data.ok) {
+                throw new Error(response.data.error || 'Error en el servidor')
+            }
+
+            procesados   += response.data.procesados
+            actualizados += response.data.actualizados
+            updateProgress(procesados, totalRows)
+        }
+
+        Swal.fire({
+            icon: 'success',
+            title: 'Importación Exitosa',
+            html: `<p>Se procesaron <strong>${procesados}</strong> filas.</p><p>Prestaciones actualizadas: <strong>${actualizados}</strong>.</p>`,
+            confirmButtonColor: '#2D6660'
+        })
+    } catch (err) {
+        Swal.fire({
+            icon: 'error',
+            title: 'Error de Importación',
+            text: err.message || 'Ocurrió un error inesperado.',
+            confirmButtonColor: '#dc2626'
+        })
+    } finally {
+        fileInput.value.value = null
+    }
+}
 
 // Utilidades
 const formatCurrency = (amount) => {

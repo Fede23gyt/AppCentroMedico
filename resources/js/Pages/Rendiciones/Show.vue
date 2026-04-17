@@ -2,7 +2,7 @@
     <Head title="Detalle de Rendición" />
 
     <AuthenticatedLayout>
-        <div class="max-w-full mx-auto px-3 py-3">
+        <div class="max-w-4xl mx-auto px-4 py-6">
             <!-- Header -->
             <div class="flex justify-end items-center mb-3">
                 <Link

@@ -2,7 +2,7 @@
     <Head title="Nueva Orden" />
 
     <AuthenticatedLayout>
-        <div class="max-w-full mx-auto px-3 py-3">
+        <div class="max-w-4xl mx-auto px-4 py-6">
             <!-- Header -->
             <div class="flex justify-between items-center mb-3">
                 <div>
@@ -90,6 +90,9 @@
                                     <div class="text-[11px] text-gray-600">
                                         DNI: {{ afiliado.dni }} | {{ afiliado.vinculo_texto }}
                                     </div>
+                                    <div class="text-[11px] text-blue-600 font-bold mt-0.5">
+                                        Cob. Efectiva: {{ afiliado.cobertura_inferida || 'SINSAL' }}
+                                    </div>
                                 </div>
                             </div>
                             <div v-else class="text-xs text-gray-500 italic">
@@ -117,6 +120,9 @@
                                 <p class="font-medium text-gray-900 text-sm">{{ beneficiarioSeleccionado?.apellido }}, {{ beneficiarioSeleccionado?.nombre }}</p>
                                 <p class="text-xs text-gray-600">
                                     DNI: {{ beneficiarioSeleccionado?.dni }} | {{ beneficiarioSeleccionado?.vinculo_texto }}
+                                </p>
+                                <p class="text-xs text-blue-600 font-bold mt-0.5">
+                                    Cobertura Inferida (Tiempo Real): {{ beneficiarioSeleccionado?.cobertura_inferida || 'SINSAL' }}
                                 </p>
                             </div>
                             <button
@@ -218,11 +224,15 @@
                                             :ref="el => { if (el) cantidadInputs[index] = el }"
                                             v-model.number="detalle.cantidad"
                                             type="number"
-                                            min="1"
+                                            :min="1"
+                                            :max="detalle.es_consulta ? 1 : null"
+                                            :readonly="detalle.es_consulta"
                                             class="w-16 px-1.5 py-1 border border-gray-200 rounded text-xs text-center focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                            @input="calcularTotalesDetalle(index)"
+                                            :class="{ 'bg-gray-100 cursor-not-allowed' : detalle.es_consulta }"
+                                            @input="() => { if(detalle.es_consulta && detalle.cantidad > 1) detalle.cantidad = 1; calcularTotalesDetalle(index); }"
                                             @keydown.enter.prevent="focusPrestacion"
                                         />
+                                        <div v-if="detalle.es_consulta" class="text-[9px] text-gray-500 mt-0.5">Máx. 1</div>
                                     </td>
                                     <td class="px-2 py-1.5 text-xs text-right text-gray-700">
                                         ${{ parseFloat(detalle.importe_uni).toFixed(2) }}
@@ -397,10 +407,41 @@ const buscarAfiliados = async () => {
             seleccionarTitular(titulares.value[0]);
         }
     } catch (error) {
-        errorBusqueda.value = 'Error al buscar afiliados';
         console.error('Error completo:', error);
+
         if (error.response) {
-            console.error('Respuesta del servidor:', error.response.data);
+            const status = error.response.status;
+            const mensaje = error.response.data.error || 'Error desconocido';
+
+            if (status === 404) {
+                // Afiliado inexistente
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Afiliado no encontrado',
+                    text: mensaje,
+                    confirmButtonColor: '#dc2626',
+                });
+            } else if (status === 403) {
+                // Certificado de baja
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Certificado de baja',
+                    text: mensaje,
+                    confirmButtonColor: '#f59e0b',
+                });
+            } else {
+                // Otros errores (500, etc.)
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error al buscar afiliados',
+                    text: mensaje,
+                    confirmButtonColor: '#dc2626',
+                });
+            }
+
+            errorBusqueda.value = '';
+        } else {
+            errorBusqueda.value = 'Error al buscar afiliados';
         }
     }
 };
@@ -516,6 +557,17 @@ const agregarPrimeraPrestacion = () => {
 };
 
 const agregarPrestacion = async (prestacion) => {
+    // Validar que no haya ya una consulta médica en total
+    if (prestacion.es_consulta && form.detalles.some(d => d.es_consulta)) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Límite de Consultas',
+            text: 'Solo se permite una prestación de tipo Consulta Médica por orden.',
+            confirmButtonColor: '#f59e0b',
+        });
+        return;
+    }
+
     try {
         const response = await axios.post('/api/ordenes/obtener-precio-prestacion', {
             prestacion_id: prestacion.id,
@@ -531,6 +583,7 @@ const agregarPrestacion = async (prestacion) => {
             codigo: prestacion.codigo,
             descripcion: prestacion.descripcion,
             cantidad: 1,
+            es_consulta: prestacion.es_consulta,
             importe_uni: precio.importe_uni,
             importe_total: precio.importe_uni,
             neto_gravado: precio.neto_gravado,
@@ -552,6 +605,20 @@ const agregarPrestacion = async (prestacion) => {
             }
         });
 
+        // Mostrar alerta si existe (ej: límite excedido al agregar el primero)
+        if (precio.mensaje_alerta) {
+             Swal.fire({
+                toast: true,
+                position: 'top-end',
+                icon: 'warning',
+                title: 'Atención',
+                text: precio.mensaje_alerta,
+                showConfirmButton: false,
+                timer: 5000,
+                timerProgressBar: true,
+            });
+        }
+
     } catch (error) {
         alert(error.response?.data?.error || 'Error al agregar prestación');
     }
@@ -564,18 +631,49 @@ const eliminarPrestacion = (index) => {
 const calcularTotalesDetalle = (index) => {
     const detalle = form.detalles[index];
 
-    // Guardamos los valores unitarios originales si no están guardados
-    if (!detalle.importe_uni_original) {
-        detalle.importe_uni_original = detalle.importe_uni;
-        detalle.total_afiliado_original = detalle.total_afiliado;
-        detalle.total_prestador_original = detalle.total_prestador;
-    }
-
-    // Recalculamos los totales basados en la cantidad
-    detalle.importe_total = detalle.cantidad * detalle.importe_uni_original;
-    detalle.total_afiliado = detalle.cantidad * detalle.total_afiliado_original;
-    detalle.total_prestador = detalle.cantidad * detalle.total_prestador_original;
+    // Recalculo local inmediato para feedback visual
+    detalle.importe_total = (detalle.cantidad * detalle.importe_uni).toFixed(2);
+    detalle.total_afiliado = (detalle.cantidad * detalle.importe_uni).toFixed(2);
+    
+    // Validar con backend (límites, cambio de precio)
+    debouncedValidarPrecio(detalle);
 };
+
+const debouncedValidarPrecio = debounce(async (detalle) => {
+    if (!detalle || detalle.cantidad < 1) return;
+
+    try {
+        const response = await axios.post('/api/ordenes/obtener-precio-prestacion', {
+            prestacion_id: detalle.prestacion_id,
+            afiliado_id: form.beneficiario_id,
+            cantidad: detalle.cantidad,
+        });
+
+        const data = response.data;
+
+        // Actualizar valores con la respuesta del servidor (puede haber cambiado el precio por límites)
+        detalle.importe_uni = data.importe_uni;
+        detalle.importe_total = parseFloat(data.importe_uni * detalle.cantidad).toFixed(2);
+        detalle.total_afiliado = parseFloat(data.total_afiliado).toFixed(2);
+        
+        // Si hay mensaje de alerta (ej: pasó a precio particular)
+        if (data.mensaje_alerta) {
+            Swal.fire({
+                toast: true,
+                position: 'top-end',
+                icon: 'warning',
+                title: 'Atención: Límite Excedido',
+                text: data.mensaje_alerta,
+                showConfirmButton: false,
+                timer: 5000,
+                timerProgressBar: true,
+            });
+        }
+
+    } catch (error) {
+        console.error('Error al validar precio:', error);
+    }
+}, 500);
 
 const calcularTotal = () => {
     return form.detalles.reduce((sum, d) => sum + parseFloat(d.importe_total), 0).toFixed(2);

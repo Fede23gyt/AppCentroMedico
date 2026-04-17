@@ -11,11 +11,11 @@ import { useMainStore } from '@/stores/main.js';
 import { useStyleStore } from '@/stores/style.js';
 import { darkModeKey, styleKey } from '@/config.js';
 
-const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
+const appName = import.meta.env.VITE_APP_NAME || 'SEO 2.0';
 const pinia = createPinia();
 
 createInertiaApp({
-    title: (title) => `${title} - ${appName}`,
+    title: (title) => title ? `${title} - ${appName}` : appName,
     resolve: (name) => resolvePageComponent(`./Pages/${name}.vue`, import.meta.glob('./Pages/**/*.vue')),
     setup({ el, App, props, plugin }) {
         const app = createApp({ render: () => h(App, props) })

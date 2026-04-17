@@ -1,0 +1,1341 @@
+CREATE procedure [dbo].[MigracionSalud]
+
+@iAnioPeriodo INT,@iMesPeriodo INT,@iIdTitularCp INT,@bBeneficiarioCobertura int,@bInformacionPago int,@bDeterminacionCarencia int,@iCarencia INT,@iIdSucursal int
+
+AS 
+
+--USE seodesarrollo2
+
+-- 2018,10,-1,1,1,1,2,1
+/*
+SET @iAnioPeriodo =2018
+SET @iMesPeriodo =10
+SET @iIdTitularCp =-1
+SET @bBeneficiarioCobertura =1
+SET @bInformacionPago =1
+SET @bDeterminacionCarencia =1
+SET @iCarencia =2
+SET @iIdSucursal =1
+*/
+
+/*
+	Procdimiento almacenado para la migracion de los datos desde sql salud al sistema de emision de ordenes
+	Fecha 23-03-2013
+	Autor CU LGP
+*/
+
+--SALSR1 --->PIE
+--PIEANTA  ---> PJV
+--PIEVEANTA --> PJV
+
+declare @FechaSinVigenciaIncorporacion datetime
+DECLARE @iIdError INT
+
+SET @iIdError=0	--
+
+set @FechaSinVigenciaIncorporacion={ d '2070-01-01'} --Sin Vigencia hasta la incorporacion del primer pago en empresa
+
+-- Determinacion del periodo que corresponde
+set @iAnioPeriodo=year(getdate())
+set @iMesPeriodo=month(getdate())
+
+if (day(getdate()))<=10
+begin
+	if month(getdate())=1 
+	begin
+		set @iAnioPeriodo=year(getdate()) -1
+		set @iMesPeriodo=12
+	end
+	begin		
+		set @iMesPeriodo= month(getdate())-1
+	end
+
+end
+
+print 'Migrando a SEo Salud'
+print @iAnioPeriodo
+print @iMesPeriodo
+
+
+IF @bBeneficiarioCobertura=1
+begin
+	PRINT 'Actualizando Personas y coberturas'
+
+	--BEGIN TRAN Migracion_Afiliados --Proceso transaccional
+
+	--Eliminacion de todas las coberturas.
+	PRINT 'Eliminaci n de todas las coberturas'
+	exec gpievenew.seodesarrollo2.dbo.ups_BorrarTablaCoberturaBeneficiario @iIdTitularCp
+	--DELETE cb 
+	--from gpievenew.seodesarrollo2.dbo.CoberturaBeneficiarios cb		   
+	--inner Join gpievenew.seodesarrollo2.dbo.Beneficiarios Beneficiarios 
+	--on Beneficiarios.IdBenCp=cb.IdBenCf
+	--INNER JOIN gpievenew.seodesarrollo2.dbo.Fichas f ON f.IdConvenioCf=1 AND f.IdTitularCp=Beneficiarios.IdTitularCf
+	--INNER JOIN gpieve.PieveSalud.dbo.fichas FichaPs ON f.idtitularcp=FichaPs.IdTitularCp
+	--where 
+	--(Beneficiarios.IdTitularCf= @iIdTitularCp OR @iIdTitularCp=-1)
+	--and f.idConvenioCf=1	-- solo eliminanos el convenio de Pieve Salud
+	SET @iIdError=@@ERROR
+
+	
+	--select idconveniocf,count(*) from gpievenew.seodesarrollo2.dbo.Fichas group by idconveniocf
+	
+	
+	print 'Eliminacion de todas las coberturas(Incluidas la de los sistemas satelites.)'
+	--Delete cb 
+	--from gpievenew.seodesarrollo2.dbo.CoberturaBeneficiarios cb
+	--inner Join gpievenew.seodesarrollo2.dbo.Beneficiarios Beneficiarios 
+	--on Beneficiarios.IdBenCp=cb.IdBenCf
+	---- fichas solo considerar la del convenio numero 1 (de pieve salud)
+	--INNER JOIN gpievenew.seodesarrollo2.dbo.Fichas f ON f.IdConvenioCf=1 AND f.IdTitularCp=Beneficiarios.IdTitularCf
+
+
+	--where 
+	--(Beneficiarios.IdTitularCf= @iIdTitularCp OR @iIdTitularCp=-1)
+	--AND beneficiarios.IdTitularCf<>999999
+	--SET @iIdError=@@ERROR
+	
+	print 'Eliminacion de los beneficiarios de los sitemas satelites (aquellos que no estan en pievesalud.)'
+	DELETE ben
+	FROM gpievenew.seodesarrollo2.dbo.Beneficiarios ben
+	INNER JOIN gpievenew.seodesarrollo2.dbo.Fichas f ON f.IdConvenioCf=1 AND f.IdTitularCp=ben.IdTitularCf -- eliminacion solo de convenio de Pieve salud
+	LEFT JOIN gpieve.PieveSalud.dbo.Fichas FichPS ON fichPS.IdTitularCp=ben.IdTitularCf	
+	WHERE fichps.IdTitularCp IS NULL
+	AND (ben.IdTitularCf=@iIdTitularCp OR @iIdTitularCp=-1)
+	AND ben.IdTitularCf<>999999
+	
+	print 'Eliminacion de las ficha de los sistemas (aquellas que no estan en pieve salud)'
+	DELETE fic
+	FROM gpievenew.seodesarrollo2.dbo.Fichas fic 
+	LEFT JOIN gpieve.PieveSalud.dbo.Fichas FichPS ON fichPS.IdTitularCp=fic.IdTitularCp
+	WHERE fichps.IdTitularCp IS NULL
+	AND (fic.IdTitularCp=@iIdTitularCp OR @iIdTitularCp=-1) AND fic.IdTitularCp<>999999
+	and fic.idConvenioCf=1 -- no tocams las coberturas particulares.
+	
+	
+	--Marcar de baja todos los beneficiarios estan de baja en el sistema de pieve salud.
+	PRINT 'Marcar de baja todos los beneficiarios estan de baja en el sistema de pieve salud.'
+	IF @iIdError=0
+	BEGIN
+		
+		Update benSeo set benSeo.Existe =0 
+		from gpievenew.seodesarrollo2.dbo.Beneficiarios benSeo 
+		inner Join 
+		gpieve.PieveSalud.dbo.beneficiarios Ben on Ben.IdBenCp=benSeo.IdBenCp and 
+		Ben.Existe=0 --Aquellas personas de baja en pieve salud.
+		WHERE (benseo.IdTitularCf=@iIdTitularCp OR @iIdTitularCp=-1)
+		
+		SET @iIdError=@@ERROR	
+	END
+
+	--Marcar de baja todas las fichas que estan de baja en el sistema de pieve salud.
+	PRINT 'Marcar de baja todas las fichas que estan de baja en el sistema de pieve salud'
+	IF @iIdError=0
+	BEGIN	
+		Update FichasSeo 
+		set FichasSeo.Existe=0 
+		from seodesarrollo2.dbo.Fichas FichasSeo 
+		inner Join gpieve.PieveSalud.dbo.Fichas Fic on Fic.IdTitularCp=FichasSeo.IdTitularcp
+		and fic.Existe=0  --Fichas dadas de baja en el sistema de pieve salud.
+		WHERE 
+		(FichasSeo.IdTitularCp=@iIdTitularCp OR @iIdTitularCp=-1)
+		
+		SET @iIdError=@@ERROR                                      
+	END
+
+
+	--Actualizar las fichas existentes en ambos lados
+	PRINT 'Actualizar las fichas existentes en ambos lados'
+	IF @iIdError=0
+	BEGIN
+		Update FicsSeo
+		SET FicsSeo.Existe=1,
+			FicsSeo.Telefono=substring(Telefonos,1,20) ,
+			FicsSeo.Domicilio=fichps.Direccion + ',' + fichps.BarrioReal + ', ' + isnull(nomlocalidad,'')
+		FROM gpievenew.seodesarrollo2.dbo.Fichas FicsSeo
+		INNER JOIN
+		gpieve.PieveSalud.dbo.Fichas FichPS	ON fichps.IdTitularCp=ficsseo.IdTitularCp	
+		LEFT JOIN gpieve.PieveSalud.dbo.Localidades l ON l.IdLocalidadCp=FichPS.IdLocalidadRCF
+		WHERE 
+		FichPS.Existe=1 AND 
+		fichps.IdTitularCp>0
+		AND (FichPS.IdTitularCp=@iIdTitularCp OR @iIdTitularCp=-1)
+		
+		SET @iIdError=@@ERROR
+
+	END
+
+	--Insertar las fichas inexistentes en seo.
+	PRINT 'Insertar las fichas inexistentes en seo.'
+	IF @iIdError=0
+	BEGIN
+		INSERT INTO gpievenew.seodesarrollo2.dbo.Fichas(IdTitularCp,Existe, IdConvenioCf,Telefono,Domicilio,fechaVigenciaPago)
+		SELECT fichps.IdTitularCp,fichps.Existe,1 idConvencioCf,substring(Telefonos,1,20) sTelefono,
+		fichps.Direccion + ',' + fichps.BarrioReal + ', ' + isnull(nomlocalidad,'')	 ,@FechaSinVigenciaIncorporacion
+		FROM 
+		gpieve.PieveSalud.dbo.Fichas FichPS
+		LEFT JOIN gpieve.PieveSalud.dbo.Localidades l ON l.IdLocalidadCp=FichPS.IdLocalidadRCF
+		--QUE NO ESTAN.
+		LEFT JOIN gpievenew.seodesarrollo2.dbo.Fichas Ficseo ON FicSeo.IdTitularCp=FichPs.IdTitularCp
+		WHERE 
+		FichPS.Existe=1 AND fichps.IdTitularCp>0
+		AND (FichPS.IdTitularCp=@iIdTitularCp OR @iIdTitularCp=-1)
+		AND Ficseo.IdTitularCp IS NULL	--No deben estar en el sistema SEO.
+		
+		SET @iIdError=@@ERROR
+	END
+
+	--Actualizar datos de beneficiarios existentes en ambos lados.
+	PRINT 'Actualizar datos de beneficiarios existentes en ambos lados'
+	print 'error'
+	print @iIderror
+	if @iIdError=0
+	begin
+	print 'entro a la actualizacion de personas'
+		Update benSeo 
+		set benSeo.Existe =1,
+			benSeo.Apellido = ben.Apellido,
+			benseo.Nombre = ben.Nombre,
+			benseo.TDoc = substring(ben.DocTipo,1, 3),
+			benseo.NumDoc = substring(ben.dni,1, 10),
+			benseo.FechNac = case when isnull(ben.FechNac,GETDATE()) <= { d '1900-01-01'} or isnull(ben.FechNac,GETDATE()) >= { d '2020-01-01'} THEN GETDATE() ELSE ben.FechNac END,
+			benseo.IdVinculoCf = ben.IdVinculoCf
+		 
+		from gpievenew.seodesarrollo2.dbo.Beneficiarios benSeo 
+		inner Join 
+		gpieve.PieveSalud.dbo.beneficiarios Ben on Ben.IdBenCp=benSeo.IdBenCp
+		--Sobre las fichas activas.    
+		INNER JOIN gpieve.PieveSalud.dbo.Fichas f ON f.IdTitularCp=ben.IdTitularCF AND f.IdTitularCp>0 AND f.Existe=1
+		WHERE (f.IdTitularCp=@iIdTitularCp OR @iIdTitularCp=-1)
+		and Ben.Existe=1 --personas activas en pieve salud.
+		
+		SET @iIdError=@@ERROR	
+	    
+	END
+
+	--Insertar los beneficiarios inexistentes en seo.
+	PRINT 'Insertar los beneficiarios inexistentes en seo'
+	if @iIdError=0
+	BEGIN
+
+		INSERT INTO gpievenew.seodesarrollo2.dbo.Beneficiarios(IdTitularCf,IdBenCp,Parent,FechaAlta,Existe,Apellido,
+													  Nombre,TDoc,NumDoc,FechNac,IdVinculoCf)
+		SELECT ben.IdTitularCF,ben.IdBenCP,isnull(ben.Parent,0),
+		CASE WHEN ISNULL(ben.FechaIng,GETDATE()) <= { d '1900-01-01' } OR ISNULL(ben.FechaIng,GETDATE()) > GETDATE() THEN GETDATE() ELSE ISNULL(ben.FechaIng,GETDATE())END,
+		1 existe,
+		ben.Apellido,
+		ben.Nombre,
+		substring(ben.DocTipo,1, 3),
+		substring(ben.dni,1, 10),
+		case when isnull(ben.FechNac,GETDATE()) <= { d '1900-01-01'} THEN GETDATE() ELSE case when ben.FechNac>GETDATE() THEN getdate() ELSE ben.FechNac end END,
+		ben.IdVinculoCf	
+		from  	 
+		gpieve.PieveSalud.dbo.beneficiarios Ben 
+		--Sobre las fichas activas.    
+		INNER JOIN gpieve.PieveSalud.dbo.Fichas f ON f.IdTitularCp=ben.IdTitularCF AND f.IdTitularCp>0 AND f.Existe=1
+		LEFT JOIN gpievenew.seodesarrollo2.dbo.Beneficiarios benSeo ON benseo.IdBenCp=ben.IdBenCP    
+		WHERE (f.IdTitularCp=@iIdTitularCp OR @iIdTitularCp=-1)
+		and Ben.Existe=1 --personas activas en pieve salud.
+		AND benseo.IdBenCp IS NULL	--No se encuentra en el sistema de emision de ordenes.
+		
+		SET @iIdError=@@ERROR	
+
+	end
+
+	-- Ahora transferencia de coberturas.
+
+	--Cobertura sobre Odontologia
+	PRINT 'Cobertura sobre Odontologia'
+	if @iIdError=0
+	begin	 
+		--INSERT INTO gpievenew.seodesarrollo2.dbo.CoberturaBeneficiarios(IdBenCf,CodCoberturaCf,FechaAlta)
+			 
+		SELECT distinct beneficiarios.IdBenCP,ISNULL(SUBSTRING(co.Cobertura,1,3),'ODO') CodCoberturaCf,	
+		case when isnull(PlanesBeneficiarios.FechaAlta,GETDATE())<={ d '1900-01-01'} OR
+				  isnull(PlanesBeneficiarios.FechaAlta,GETDATE())>{ d '2019-01-01'} THEN 
+	          		GETDATE() ELSE isnull(PlanesBeneficiarios.FechaAlta,GETDATE()) END FechaAlta  
+		INTO #tmp_CoberturaOdontologia
+		FROM  gpieve.PieveSalud.dbo.PlanesFichas PlanesFichas 
+		inner Join gpieve.PieveSalud.dbo.Beneficiarios Beneficiarios on PlanesFichas.IdTitularCf=Beneficiarios.IdTitularCf
+		
+		AND planesfichas.IdRubroCf=3		--Odontologia                   
+		Inner Join gpieve.PieveSalud.dbo.PlanesBeneficiarios PlanesBeneficiarios on PlanesBeneficiarios.IdRubroCf=PlanesFichas.idRubroCf and
+		Beneficiarios.IdBenCp=PlanesBeneficiarios.IdBenCf and Beneficiarios.Existe=1
+		INNER JOIN gpieve.PieveSalud.dbo.Fichas f ON f.IdTitularCp=PlanesFichas.IdTitularCF AND f.Existe=1 AND f.IdTitularCp>0
+		left JOIN gpieve.PieveSalud.dbo.CoberturaOdontologia co ON co.IdRubroCf=3 AND co.PL=SUBSTRING(PlanesFichas.[Plan],1,3)
+		WHERE (f.IdTitularCp=@iIdTitularCp OR @iIdTitularCp=-1)
+		
+		SET @iIdError=@@ERROR	
+	END
+
+	--SELECT * FROM CoberturaOdontologia
+
+	--Cobertura sobre Odontologia no encontrado
+	PRINT 'Cobertura sobre Odontologia no encontrado'
+	if @iIdError=0
+	begin	 
+		--INSERT INTO gpievenew.seodesarrollo2.dbo.CoberturaBeneficiarios(IdBenCf,CodCoberturaCf,FechaAlta)
+			 
+		SELECT beneficiarios.IdBenCP,
+		max(SUBSTRING(co.Cobertura,1,3)) CodCoberturaCf,	
+		MIN(case when isnull(PlanesBeneficiarios.FechaAlta,GETDATE())<={ d '1900-01-01'} OR
+				  isnull(PlanesBeneficiarios.FechaAlta,GETDATE())>{ d '2019-01-01'} THEN 
+				  GETDATE() ELSE isnull(PlanesBeneficiarios.FechaAlta,GETDATE()) END) FechaAlta  
+		into #tmp_CoberturaSinOdontologia 	          
+		FROM  gpieve.PieveSalud.dbo.PlanesFichas PlanesFichas 
+		inner Join gpieve.PieveSalud.dbo.Beneficiarios Beneficiarios on PlanesFichas.IdTitularCf=Beneficiarios.IdTitularCf	
+		AND planesfichas.IdRubroCf<>3		--Odontologia                   	
+		Inner Join gpieve.PieveSalud.dbo.PlanesBeneficiarios PlanesBeneficiarios on PlanesBeneficiarios.IdRubroCf=PlanesFichas.idRubroCf and
+		Beneficiarios.IdBenCp=PlanesBeneficiarios.IdBenCf and Beneficiarios.Existe=1 
+		INNER JOIN gpieve.PieveSalud.dbo.Fichas f ON f.IdTitularCp=PlanesFichas.IdTitularCF AND f.Existe=1 AND f.IdTitularCp>0
+		
+		inner JOIN gpieve.PieveSalud.dbo.CoberturaOdontologia co ON			--Debe encontrarse.
+		co.IdRubroCf=0 AND co.PL=SUBSTRING(PlanesFichas.[Plan],1,3)
+		 
+		-- que no esta en las coberturas. 	
+		LEFT JOIN #tmp_CoberturaOdontologia cb ON cb.IdBenCp=beneficiarios.IdBenCP 	
+		WHERE (f.IdTitularCp=@iIdTitularCp OR @iIdTitularCp=-1)	and
+		 cb.IdBenCp IS NULL				--No insertado en la de odontologia.
+		GROUP BY beneficiarios.IdBenCP
+		
+			
+		--Detectar posible error
+		SET @iIdError=@@ERROR
+	END
+
+	--Si no esta en ni en el primero ni en el segundo entonces insertamos simplemente "ODO"
+	PRINT 'Si no esta en ni en el primero ni en el segundo entonces insertamos simplemente "ODO"'
+	if @iIdError=0
+	BEGIN
+		SELECT distinct beneficiarios.IdBenCP,
+		'ODO' CodCoberturaCf,
+		CONVERT(DATETIME, 
+		CONVERT(VARCHAR, isnull(f.AnioPeriodoIngreso,2010)) + '-' + convert(VARCHAR,ISNULL(f.MesPeriodoIngreso,1)) + '-01' 
+		)		
+		 FechaAlta  
+		into #tmp_CoberturaOdoFinal 	          
+		FROM  gpieve.PieveSalud.dbo.PlanesFichas PlanesFichas 
+		inner Join gpieve.PieveSalud.dbo.Beneficiarios Beneficiarios on PlanesFichas.IdTitularCf=Beneficiarios.IdTitularCf	
+		Inner Join gpieve.PieveSalud.dbo.PlanesBeneficiarios PlanesBeneficiarios on PlanesBeneficiarios.IdRubroCf=PlanesFichas.idRubroCf and
+		Beneficiarios.IdBenCp=PlanesBeneficiarios.IdBenCf and Beneficiarios.Existe=1 
+		INNER JOIN gpieve.PieveSalud.dbo.Fichas f ON f.IdTitularCp=PlanesFichas.IdTitularCF AND f.Existe=1 AND f.IdTitularCp>0
+		
+		-- que no esta en las coberturas. 	
+		LEFT JOIN #tmp_CoberturaOdontologia cb ON cb.IdBenCp=beneficiarios.IdBenCP
+		LEFT JOIN #tmp_CoberturaSinOdontologia cbs ON cbs.IdBenCp=beneficiarios.IdBenCP 	
+		WHERE (f.IdTitularCp=@iIdTitularCp OR @iIdTitularCp=-1)	and
+		 cb.IdBenCp IS NULL and				--No insertado en la de odontologia.
+		 cbs.idBenCp IS NULL				--No es ODO 	
+		and AnioPeriodoIngreso >=1900 and MesPeriodoIngreso between 1 and 12
+		--Detectar posible error
+		SET @iIdError=@@ERROR
+	END
+
+	--INSERTAR LAS TRES OPCIONES ANTERIORES.
+	PRINT 'Insertando todo'
+	if @iIdError=0
+	BEGIN
+		INSERT INTO gpievenew.seodesarrollo2.dbo.CoberturaBeneficiarios(IdBenCf,CodCoberturaCf,FechaAlta)
+		
+		SELECT distinct t.idBenCp,t.CodCoberturaCf,t.FechaAlta	 
+		FROM 
+		(SELECT idbencp,CodCoberturaCf COLLATE Compatibility_54_c0a_30003 CodCoberturaCf , FechaAlta  FROM #tmp_CoberturaOdontologia
+		UNION all
+		select  idbencp,CodCoberturaCf COLLATE Compatibility_54_c0a_30003 CodCoberturaCf , FechaAlta  from #tmp_CoberturaSinOdontologia
+		UNION ALL 
+		select  idbencp,CodCoberturaCf COLLATE Compatibility_54_c0a_30003 CodCoberturaCf , FechaAlta  from #tmp_CoberturaOdoFinal) t
+		
+		SET @iIdError=@@ERROR
+		
+	END
+
+
+
+	--INSERTAR Los Sin SAL (todo el mundo)
+	PRINT 'INSERTAR Los Sin SAL (todo el mundo)'
+	if @iIdError=0
+	BEGIN
+		INSERT INTO gpievenew.seodesarrollo2.dbo.CoberturaBeneficiarios(IdBenCf,CodCoberturaCf,FechaAlta)
+		
+		SELECT distinct t.idBenCp,'SINSAL' CodCoberturaCf,		
+		isnull(
+			planesbeneficiarios.FechaAlta,
+		CONVERT(DATETIME, 
+		CONVERT(VARCHAR, isnull(f.AnioPeriodoIngreso,2010)) + '-' + convert(VARCHAR,CASE WHEN ISNULL(f.MesPeriodoIngreso,1)<1 THEN 1 ELSE ISNULL(f.MesPeriodoIngreso,1) END ) + '-01' 
+		)
+		) FechaAlta
+		 
+		FROM 
+		(SELECT  IdBenCp , CodCoberturaCf  COLLATE Compatibility_54_c0a_30003 CodCoberturaCf,FechaAlta    FROM #tmp_CoberturaOdontologia
+		UNION all
+		select  IdBenCp , CodCoberturaCf  COLLATE Compatibility_54_c0a_30003 CodCoberturaCf,FechaAlta  from #tmp_CoberturaSinOdontologia
+		UNION ALL 
+		select  IdBenCp , CodCoberturaCf  COLLATE Compatibility_54_c0a_30003 CodCoberturaCf,FechaAlta   from #tmp_CoberturaOdoFinal) 
+		t
+		INNER JOIN gpieve.PieveSalud.dbo.Beneficiarios b ON b.IdBenCP=t.IdBenCP
+		INNER JOIN gpieve.PieveSalud.dbo.Fichas f ON f.IdTitularCp=b.IdTitularCF AND  f.AnioPeriodoIngreso<=YEAR(GETDATE())+1
+		AND f.AnioPeriodoIngreso >=1980
+		left join gpieve.PieveSalud.dbo.PlanesFichas PlanesFichas ON planesfichas.IdTitularCF=b.IdTitularCF AND planesfichas.IdRubroCf=1
+		left JOIN gpieve.PieveSalud.dbo.PlanesBeneficiarios PlanesBeneficiarios on PlanesBeneficiarios.IdRubroCf=1 and
+		PlanesBeneficiarios.IdBenCf=t.IdBenCP
+		
+		SET @iIdError=@@ERROR
+		
+	END
+
+
+	-- Rubro SALUD
+	PRINT 'Rubro SALUD'
+	if @iIdError=0
+	BEGIN		
+		INSERT INTO gpievenew.seodesarrollo2.dbo.CoberturaBeneficiarios(IdBenCf,CodCoberturaCf,FechaAlta)
+		SELECT distinct beneficiarios.IdBenCP,
+		case when SUBSTRING(PlanesFichas.[Plan],1,3)='NIV' THEN 'INI' ELSE SUBSTRING(PlanesFichas.[Plan],1,3) end CodCoberturaCf,		
+		case when isnull(PlanesBeneficiarios.FechaAlta,GETDATE())<={ d '1900-01-01'} OR
+				  isnull(PlanesBeneficiarios.FechaAlta,GETDATE())>{ d '2019-01-01'} THEN 
+	          		GETDATE() ELSE isnull(PlanesBeneficiarios.FechaAlta,GETDATE()) END FechaAlta  
+		
+		FROM  gpieve.PieveSalud.dbo.PlanesFichas PlanesFichas 
+		inner Join gpieve.PieveSalud.dbo.Beneficiarios Beneficiarios on PlanesFichas.IdTitularCf=Beneficiarios.IdTitularCf	
+		AND planesfichas.IdRubroCf=2		--cobertura de salud
+		and Beneficiarios.Existe=1
+		Inner Join gpieve.PieveSalud.dbo.PlanesBeneficiarios PlanesBeneficiarios on PlanesBeneficiarios.IdRubroCf=PlanesFichas.idRubroCf and
+		Beneficiarios.IdBenCp=PlanesBeneficiarios.IdBenCf 
+		INNER JOIN gpieve.PieveSalud.dbo.Fichas f ON f.IdTitularCp=PlanesFichas.IdTitularCF AND f.Existe=1 AND f.IdTitularCp>0
+		
+		WHERE (f.IdTitularCp=@iIdTitularCp OR @iIdTitularCp=-1)
+		AND case when SUBSTRING(PlanesFichas.[Plan],1,3)='NIV' THEN 'INI' ELSE SUBSTRING(PlanesFichas.[Plan],1,3) END Collate Database_Default
+		IN (SELECT codcoberturacp FROM gpievenew.seodesarrollo2.dbo.Cobertura)
+		
+		
+		
+		
+		SET @iIdError=@@ERROR
+			
+	END
+	-- cobertura "PIE"
+
+	if @iIdError=0
+	BEGIN
+		PRINT 'cobertura "PIE"'
+		INSERT INTO gpievenew.seodesarrollo2.dbo.CoberturaBeneficiarios(IdBenCf,CodCoberturaCf,FechaAlta)	
+		SELECT  DISTINCT cb.IdBenCf,'INI' CodCoberturaCf ,
+		case when isnull(PlanesBeneficiarios.FechaAlta,GETDATE())<={ d '1900-01-01'} OR
+				  isnull(PlanesBeneficiarios.FechaAlta,GETDATE())>{ d '2019-01-01'} THEN 
+	          		GETDATE() ELSE isnull(PlanesBeneficiarios.FechaAlta,GETDATE()) END FechaAlta 
+		FROM		
+		gpieve.PieveSalud.dbo.PlanesFichas PlanesFichas 
+		inner Join gpieve.PieveSalud.dbo.Beneficiarios Beneficiarios on PlanesFichas.IdTitularCf=Beneficiarios.IdTitularCf	
+		AND planesfichas.IdRubroCf=7		--cobertura de pieve
+		and Beneficiarios.Existe=1
+		Inner Join gpieve.PieveSalud.dbo.PlanesBeneficiarios PlanesBeneficiarios on PlanesBeneficiarios.IdRubroCf=PlanesFichas.idRubroCf and
+		Beneficiarios.IdBenCp=PlanesBeneficiarios.IdBenCf 
+		INNER JOIN gpieve.PieveSalud.dbo.Fichas f ON f.IdTitularCp=PlanesFichas.IdTitularCF AND f.Existe=1 AND f.IdTitularCp>0
+		inner Join gpievenew.seodesarrollo2.dbo.CoberturaBeneficiarios cb on cb.IdBenCf=beneficiarios.IdBenCP
+		and cb.CodCoberturaCf='PIE'	
+		WHERE (f.IdTitularCp=@iIdTitularCp OR @iIdTitularCp=-1)
+			
+		SET @iIdError=@@ERROR		
+	END
+
+
+	--Aquellos que no tiene PIE y tiene rubro 6
+	PRINT 'Aquellos que no tiene PIE y tiene rubro 6'
+	if @iIdError=0
+	BEGIN
+		INSERT INTO gpievenew.seodesarrollo2.dbo.CoberturaBeneficiarios(IdBenCf,CodCoberturaCf,FechaAlta)	
+		SELECT  DISTINCT beneficiarios.IdBenCP,'PIE' CodCoberturaCf ,
+		case when isnull(PlanesFichas.FechaAltac,GETDATE())<={ d '1900-01-01'} OR
+				  isnull(PlanesFichas.FechaAltac,GETDATE())>{ d '2019-01-01'} THEN 
+	          	  GETDATE() ELSE isnull(PlanesFichas.FechaAltac,GETDATE()) END FechaAlta 
+		
+		FROM		
+		gpieve.PieveSalud.dbo.PlanesFichas PlanesFichas 
+		inner Join gpieve.PieveSalud.dbo.Beneficiarios Beneficiarios on PlanesFichas.IdTitularCf=Beneficiarios.IdTitularCf	
+		AND planesfichas.IdRubroCf=6		--cobertura de pieve
+		and Beneficiarios.Existe=1
+		left Join gpieve.PieveSalud.dbo.PlanesBeneficiarios PlanesBeneficiarios on PlanesBeneficiarios.IdRubroCf=PlanesFichas.idRubroCf and
+		Beneficiarios.IdBenCp=PlanesBeneficiarios.IdBenCf 
+		INNER JOIN gpieve.PieveSalud.dbo.Fichas f ON f.IdTitularCp=PlanesFichas.IdTitularCF AND f.Existe=1 AND f.IdTitularCp>0
+		left Join gpievenew.seodesarrollo2.dbo.CoberturaBeneficiarios cb on cb.IdBenCf=beneficiarios.IdBenCP
+		and cb.CodCoberturaCf='PIE'	
+		WHERE (f.IdTitularCp=@iIdTitularCp OR @iIdTitularCp=-1)
+		AND cb.IdCoberturaBeneficiariosCp IS NULL -- No Tiene el plan PIE
+		
+		SET @iIdError=@@ERROR
+	end
+
+	--Aquellos que no tiene PIE y tiene rubro 7
+	PRINT 'Aquellos que no tiene PIE y tiene rubro 7'
+	if @iIdError=0
+	BEGIN
+		INSERT INTO gpievenew.seodesarrollo2.dbo.CoberturaBeneficiarios(IdBenCf,CodCoberturaCf,FechaAlta)	
+		SELECT  DISTINCT Beneficiarios.IdBenCP,'INI' CodCoberturaCf ,
+		case when isnull(PlanesBeneficiarios.FechaAlta,GETDATE())<={ d '1900-01-01'} OR
+				  isnull(PlanesBeneficiarios.FechaAlta,GETDATE())>{ d '2019-01-01'} THEN 
+	          		GETDATE() ELSE isnull(PlanesBeneficiarios.FechaAlta,GETDATE()) END FechaAlta 
+		FROM		
+		gpieve.PieveSalud.dbo.PlanesFichas PlanesFichas 
+		inner Join gpieve.PieveSalud.dbo.Beneficiarios Beneficiarios on PlanesFichas.IdTitularCf=Beneficiarios.IdTitularCf	
+		AND planesfichas.IdRubroCf=7		--cobertura de pieve
+		and Beneficiarios.Existe=1
+		Inner Join gpieve.PieveSalud.dbo.PlanesBeneficiarios PlanesBeneficiarios on PlanesBeneficiarios.IdRubroCf=PlanesFichas.idRubroCf and
+		Beneficiarios.IdBenCp=PlanesBeneficiarios.IdBenCf 
+		INNER JOIN gpieve.PieveSalud.dbo.Fichas f ON f.IdTitularCp=PlanesFichas.IdTitularCF AND f.Existe=1 AND f.IdTitularCp>0
+		left Join gpievenew.seodesarrollo2.dbo.CoberturaBeneficiarios cb on cb.IdBenCf=beneficiarios.IdBenCP
+		and cb.CodCoberturaCf='PIE'	
+		WHERE (f.IdTitularCp=@iIdTitularCp OR @iIdTitularCp=-1)
+		AND cb.IdCoberturaBeneficiariosCp IS NULL -- No Tiene el plan PIE
+		
+		SET @iIdError=@@ERROR
+	end
+
+
+	PRINT 'Cobertura por Adicionales' -- todas las personas que estan en la ficha tiene el plan pieve
+	--Cobertura por Adicionales.
+	if @iIdError=0
+	BEGIN
+		INSERT INTO gpievenew.seodesarrollo2.dbo.CoberturaBeneficiarios(IdBenCf,CodCoberturaCf,FechaAlta)
+		
+		SELECT distinct beneficiarios.IdBenCP,
+		ttc.sCobertura CodCoberturaCf,
+		min		
+		(case when isnull(planesfichas.FechaAlta,GETDATE())<={ d '1900-01-01'} OR
+				  isnull(planesfichas.FechaAlta,GETDATE())>{ d '2019-01-01'} THEN 
+	          		GETDATE() ELSE isnull(planesfichas.FechaAlta,GETDATE()) END) FechaAlta  
+		
+		FROM  gpieve.PieveSalud.dbo.Fichas f  
+		inner Join gpieve.PieveSalud.dbo.Beneficiarios Beneficiarios on f.IdTitularCp=Beneficiarios.IdTitularCf		
+		AND f.Existe=1 AND f.IdTitularCp>0 and Beneficiarios.Existe=1 --ficha, personas y Identificador coherente.
+		INNER JOIN  gpieve.PieveSalud.dbo.PlanesFichas PlanesFichas ON PlanesFichas.IdTitularCF =f.IdTitularCp --Planes Fichas
+		--Adicionales
+		inner join gpieve.PieveSalud.dbo.AdicionalPlanFicha apf ON apf.IdTitularCf=f.IdTitularCp AND apf.IdRubroCf=Planesfichas.IdRubroCf
+		
+		INNER JOIN gpieve.PieveSalud.dbo.tb_Tabla_Cobertura  ttc ON 
+		ttc.iIdOrigenTabla=1					--Adicionales. 
+		AND ttc.sIdTabla=apf.IdAdicionalCf
+			
+			
+		--insertar siempre y cuando ya no la tenga insertada.
+		
+		LEFT JOIN  gpievenew.seodesarrollo2.dbo.CoberturaBeneficiarios cb ON cb.IdBenCf=beneficiarios.IdBenCP 
+		AND cb.CodCoberturaCf Collate Database_Default  = ttc.sCobertura Collate Database_Default 
+			
+		WHERE (f.IdTitularCp=@iIdTitularCp OR @iIdTitularCp=-1) 
+		AND	cb.IdCoberturaBeneficiariosCp IS NULL	-- que la persona no tenga ya la cobertura.
+			
+		GROUP BY beneficiarios.IdBenCP,	ttc.sCobertura 
+		SET @iIdError=@@ERROR
+		
+	END
+	
+	IF 	@iIdError=0 
+	BEGIN
+		PRINT 'Cobertura por planes personass'
+		
+		INSERT INTO gpievenew.seodesarrollo2.dbo.CoberturaBeneficiarios(IdBenCf,CodCoberturaCf,FechaAlta)
+		
+		SELECT distinct beneficiarios.IdBenCP,
+		ttc.sCobertura CodCoberturaCf,
+		min		
+		(case when isnull(planesfichas.FechaAlta,GETDATE())<={ d '1900-01-01'} OR
+				  isnull(planesfichas.FechaAlta,GETDATE())>{ d '2019-01-01'} THEN 
+	          		GETDATE() ELSE isnull(planesfichas.FechaAlta,GETDATE()) END) FechaAlta  
+		
+		FROM  gpieve.PieveSalud.dbo.Fichas f  
+		inner Join gpieve.PieveSalud.dbo.Beneficiarios Beneficiarios on f.IdTitularCp=Beneficiarios.IdTitularCf		
+		AND f.Existe=1 AND f.IdTitularCp>0 and Beneficiarios.Existe=1 --ficha, personas y Identificador coherente.
+		INNER JOIN  gpieve.PieveSalud.dbo.PlanesFichas PlanesFichas ON PlanesFichas.IdTitularCF =f.IdTitularCp --Planes Fichas
+		
+		
+		INNER JOIN gpieve.PieveSalud.dbo.tb_Tabla_Cobertura  ttc ON 
+		ttc.sidtabla=PlanesFichas.[Plan]  --por nombre de plan		
+		and ttc.iIdOrigenTabla=2    		--origen por plan
+		AND ( (isnull(ttc.iIdRubro,0) >0 AND ttc.iIdRubro=planesfichas.IdRubroCf) OR (isnull(ttc.iIdRubro,0)=0))
+		  	
+		--insertar siempre y cuando ya no la tenga insertada.
+		
+		LEFT JOIN  gpievenew.seodesarrollo2.dbo.CoberturaBeneficiarios cb ON cb.IdBenCf=beneficiarios.IdBenCP 
+		AND cb.CodCoberturaCf Collate Database_Default  = ttc.sCobertura Collate Database_Default 
+			
+		WHERE 
+		(f.IdTitularCp=@iIdTitularCp OR @iIdTitularCp=-1) 
+		AND	
+		cb.IdCoberturaBeneficiariosCp IS NULL	-- que la persona no tenga ya la cobertura.
+		--AND f.IdTitularCp=249171	
+		GROUP BY beneficiarios.IdBenCP,	ttc.sCobertura 
+	
+		print @@rowcount
+		print 'filas afectadas'
+		print @iIdTitularCp
+		SELECT distinct beneficiarios.IdBenCP,
+		ttc.sCobertura CodCoberturaCf,
+		min		
+		(case when isnull(planesfichas.FechaAlta,GETDATE())<={ d '1900-01-01'} OR
+				  isnull(planesfichas.FechaAlta,GETDATE())>{ d '2019-01-01'} THEN 
+	          		GETDATE() ELSE isnull(planesfichas.FechaAlta,GETDATE()) END) FechaAlta  
+		
+		FROM  gpieve.PieveSalud.dbo.Fichas f  
+		inner Join gpieve.PieveSalud.dbo.Beneficiarios Beneficiarios on f.IdTitularCp=Beneficiarios.IdTitularCf		
+		AND f.Existe=1 AND f.IdTitularCp>0 and Beneficiarios.Existe=1 --ficha, personas y Identificador coherente.
+		INNER JOIN  gpieve.PieveSalud.dbo.PlanesFichas PlanesFichas ON PlanesFichas.IdTitularCF =f.IdTitularCp --Planes Fichas
+		
+		
+		INNER JOIN gpieve.PieveSalud.dbo.tb_Tabla_Cobertura  ttc ON 
+		ttc.sidtabla=PlanesFichas.[Plan]  --por nombre de plan		
+		and ttc.iIdOrigenTabla=2    		--origen por plan
+		AND ( (isnull(ttc.iIdRubro,0) >0 AND ttc.iIdRubro=planesfichas.IdRubroCf) OR (isnull(ttc.iIdRubro,0)=0))
+		  	
+		--insertar siempre y cuando ya no la tenga insertada.
+		
+		LEFT JOIN  gpievenew.seodesarrollo2.dbo.CoberturaBeneficiarios cb ON cb.IdBenCf=beneficiarios.IdBenCP 
+		AND cb.CodCoberturaCf Collate Database_Default  = ttc.sCobertura Collate Database_Default 
+			
+		WHERE 
+		(f.IdTitularCp=377939) 
+		AND	
+		cb.IdCoberturaBeneficiariosCp IS NULL	-- que la persona no tenga ya la cobertura.
+		--AND f.IdTitularCp=249171	
+		GROUP BY beneficiarios.IdBenCP,	ttc.sCobertura 
+
+
+	END
+	
+	-- Coberturas para Sagrado Corazon
+	
+	IF 	@iIdError=0 
+	BEGIN
+		
+		-- PIEVEOR
+		-- SALUDINT
+		-- SALUD
+		
+		-- Filtro de los planes de salud para oran.	
+		SELECT  pf.IdPlanFichaCp, pf.IdTitularCF,pf.idRubrocf,pf.[Plan]
+		into #tmp_Oran
+		FROM 
+		GPIEVE.pievesalud.dbo.fichas f INNER JOIN GPIEVE.pievesalud.dbo.planesfichas pf ON f.IdTitularCp=pf.IdTitularCF
+		AND f.Existe=1 AND pf.IdRubroCf in (2,6)
+		WHERE 
+		(
+		pf.[Plan] LIKE 'CMO%' OR
+		pf.[Plan] LIKE 'NORTE%' or
+		pf.[Plan] LIKE 'INICIAL_O%'
+		OR 
+		(
+			pf.[pLAN]<>'' and 
+			(
+			  (f.idContratanteCf=0 and f.IdCobradorCf in (SELECT idCobradorCp fROM GPIEVE.pievesalud.dbo.cobradores where idClaveLocalidadCf in (73,80)))
+														 or
+			  (f.idContratanteCf in (select idContratanteCf from GPIEVE.pievesalud.dbo.empresa_localidad where idLocalidadCf in (73,80)) or f.idcontratantecf in (141,812))
+			
+			) 
+		)
+		)
+		and IdTitularCP>0
+		AND 
+		(IdTitularCp=@iIdTitularCp OR @iIdTitularCp=-1) --Persona especifica
+		
+		
+		-- definir El plan, Primero salud (rubro 2) luego el rubro 4
+		select #tmp_Oran.idPlanFichaCp,#tmp_Oran.IdTitularCf,#tmp_Oran.idRubroCf, #tmp_Oran.[Plan]
+		into #tmp_OrigenOran
+		from #tmp_Oran
+		inner Join 
+		(
+		select IdTitularCf,min(idRubroCf) idRubroCf 
+		from #tmp_Oran
+		group by IdTitularCf
+		) t
+		on #tmp_Oran.IdTitularCf=t.IdtitularCf and #tmp_Oran.idRubroCf=t.idRubroCf				
+		order by #tmp_Oran.idTitularCF
+		
+		
+		-- Insertar las coberturas de oran		
+		INSERT INTO gpievenew.seodesarrollo2.dbo.CoberturaBeneficiarios(IdBenCf,CodCoberturaCf,FechaAlta)
+		
+		SELECT distinct beneficiarios.IdBenCP,
+		ttc.sCobertura CodCoberturaCf,
+		min		
+		(case when isnull(planesfichas.FechaAlta,GETDATE())<={ d '1900-01-01'} OR
+				  isnull(planesfichas.FechaAlta,GETDATE())>{ d '2019-01-01'} THEN 
+	          		GETDATE() ELSE isnull(planesfichas.FechaAlta,GETDATE()) END) FechaAlta  
+		
+		FROM  gpieve.PieveSalud.dbo.Fichas f
+		inner join #tmp_OrigenOran o on f.idTitularCp=o.IdTitularCf		  
+		inner Join gpieve.PieveSalud.dbo.Beneficiarios Beneficiarios on f.IdTitularCp=Beneficiarios.IdTitularCf		
+		AND f.Existe=1 AND f.IdTitularCp>0 and Beneficiarios.Existe=1 --ficha, personas y Identificador coherente.
+		INNER JOIN  gpieve.PieveSalud.dbo.PlanesFichas PlanesFichas ON PlanesFichas.idPlanFichaCp=O.idPlanFichaCp		
+		INNER JOIN gpieve.PieveSalud.dbo.tb_Tabla_Cobertura  ttc ON 
+		ttc.sidtabla=o.[Plan]			     -- Por nombre de plan		
+		and ttc.iIdOrigenTabla=4    		 -- Origen por planes de la clinica de Oran.		
+		AND ( (isnull(ttc.iIdRubro,0) >0 AND ttc.iIdRubro=o.IdRubroCf) OR (isnull(ttc.iIdRubro,0)=0))
+		  	
+		--insertar siempre y cuando ya no la tenga insertada.		
+		LEFT JOIN  gpievenew.seodesarrollo2.dbo.CoberturaBeneficiarios cb ON cb.IdBenCf=beneficiarios.IdBenCP 
+		AND cb.CodCoberturaCf Collate Database_Default  = ttc.sCobertura Collate Database_Default			
+		WHERE 
+		(f.IdTitularCp=@iIdTitularCp OR @iIdTitularCp=-1) 
+		AND	
+		cb.IdCoberturaBeneficiariosCp IS NULL	-- que la persona no tenga ya la cobertura.		
+		GROUP BY beneficiarios.IdBenCP,	ttc.sCobertura 
+				
+	end
+
+	-- Todas las personas que no tengan la cobertura saludbasic
+	IF 	@iIdError=0 
+	BEGIN
+		INSERT INTO gpievenew.seodesarrollo2.dbo.CoberturaBeneficiarios(IdBenCf,CodCoberturaCf,FechaAlta)		
+		select distinct  idBenCp,'SALBASIC' CodCoberturaCf,
+		min		
+		(case when isnull(planesfichas.FechaAlta,GETDATE())<={ d '1900-01-01'} OR
+				  isnull(planesfichas.FechaAlta,GETDATE())>{ d '2019-01-01'} THEN 
+	          		GETDATE() ELSE isnull(planesfichas.FechaAlta,GETDATE()) END) FechaAlta 
+		
+		FROM  gpieve.PieveSalud.dbo.Fichas f		
+		inner Join gpieve.PieveSalud.dbo.Beneficiarios Beneficiarios on f.IdTitularCp=Beneficiarios.IdTitularCf		
+		AND f.Existe=1 AND f.IdTitularCp>0 and Beneficiarios.Existe=1 
+		and (f.IdTitularCp=@iIdTitularCp OR @iIdTitularCp=-1) 
+		INNER JOIN  gpieve.PieveSalud.dbo.PlanesFichas PlanesFichas ON planesfichas.idTitularCf=f.IdTitularCp
+		--insertar siempre y cuando ya no la tenga insertada.		
+		LEFT JOIN  gpievenew.seodesarrollo2.dbo.CoberturaBeneficiarios cb ON cb.IdBenCf=beneficiarios.IdBenCP 
+		AND cb.CodCoberturaCf ='SALBASIC'
+        where 
+		(f.IdTitularCp=@iIdTitularCp OR @iIdTitularCp=-1) 
+		AND	
+		cb.IdCoberturaBeneficiariosCp IS NULL	-- que la persona no tenga ya la cobertura.	
+		group by idBenCp
+	end
+	-- Plan Pieve Targagal
+	IF 	@iIdError=0 
+	BEGIN
+				
+		insert into gpievenew.seodesarrollo2.dbo.CoberturaBeneficiarios(IdBenCf,CodCoberturaCf,FechaAlta)
+		select idBenCf,'PIEVETAR',min(coberturaBeneficiarios.fechaAlta)  
+		from gpievenew.seodesarrollo2.dbo.coberturaBeneficiarios coberturaBeneficiarios
+		inner join 	gpievenew.seodesarrollo2.dbo.beneficiarios a on a.idBenCp=coberturaBeneficiarios.idbencf
+		where codCoberturaCf in ('PIE','PJV','PIEVEOR') and
+		(a.IdTitularCf=@iIdTitularCp OR @iIdTitularCp=-1) 
+		group by idBenCf
+
+
+		insert into gpievenew.seodesarrollo2.dbo.coberturaBeneficiarios(idBenCf,codCoberturaCf,FechaAlta)
+		select idBenCf,'SINSALTAR',min(coberturaBeneficiarios.fechaAlta)  
+		from gpievenew.seodesarrollo2.dbo.coberturaBeneficiarios coberturaBeneficiarios
+		inner join 	gpievenew.seodesarrollo2.dbo.beneficiarios a on a.idBenCp=coberturaBeneficiarios.idbencf
+		where codCoberturaCf in ('PIE','PJV','PIEVEOR') and
+		(a.IdTitularCf=@iIdTitularCp OR @iIdTitularCp=-1) 
+		group by idBenCf
+	end
+
+	-- Plan de salud de oran, embarccion, colonia,pichanal
+	IF 	@iIdError=0 
+	BEGIN
+
+
+		insert into gpievenew.seodesarrollo2.dbo.coberturabeneficiarios(IdBenCf,CodCoberturaCf,FechaAlta,Orden,HabilitadoTemporal)
+		select  a.IdBenCf,'NORSAL', min(a.fechaalta),1,0
+		from gpievenew.seodesarrollo2.dbo.coberturabeneficiarios a
+		inner join gpievenew.seodesarrollo2.dbo.beneficiarios c on a.idBenCf=c.idBenCp 
+		left join gpievenew.seodesarrollo2.dbo.coberturabeneficiarios b
+		on a.idbenCf=b.idBenCf and b.codCoberturaCf in ('NORSAL')
+		where A.CodCoberturaCf not in ('NORSAL')
+		and b.idBenCf is null
+		AND (c.IdTitularCf=@iIdTitularCp OR @iIdTitularCp=-1) 
+		group by a.IdBenCf
+
+
+		
+		insert into gpievenew.seodesarrollo2.dbo.coberturabeneficiarios(IdBenCf,CodCoberturaCf,FechaAlta,Orden,HabilitadoTemporal)
+		select  a.IdBenCf,'NORSALBASIC', min(a.fechaalta),1,0
+		from gpievenew.seodesarrollo2.dbo.coberturabeneficiarios a
+		inner join gpievenew.seodesarrollo2.dbo.beneficiarios c on a.idBenCf=c.idBenCp 
+		left join gpievenew.seodesarrollo2.dbo.coberturabeneficiarios b
+		on a.idbenCf=b.idBenCf and b.codCoberturaCf in ('NORSALBASIC')
+		where A.CodCoberturaCf not in ('NORSALBASIC')
+		and b.idBenCf is null
+		AND (c.IdTitularCf=@iIdTitularCp OR @iIdTitularCp=-1) 
+		group by a.IdBenCf
+
+       END
+  -- Plan pieve Cachi
+
+	IF 	@iIdError=0 
+	BEGIN
+		--todo el mundo...... por ahora.		
+		insert into gpievenew.seodesarrollo2.dbo.CoberturaBeneficiarios(IdBenCf,CodCoberturaCf,FechaAlta)
+		select idBenCf,'PIEVECACHI',min(coberturaBeneficiarios.fechaAlta)  
+		from gpievenew.seodesarrollo2.dbo.coberturaBeneficiarios coberturaBeneficiarios
+		inner join 	gpievenew.seodesarrollo2.dbo.beneficiarios a on a.idBenCp=coberturaBeneficiarios.idbencf
+		where codCoberturaCf in ('PIE','PJV','PIEVEOR') and
+		(a.IdTitularCf=@iIdTitularCp OR @iIdTitularCp=-1) 
+		group by idBenCf
+	end 
+  -- Plan pieve cafayate
+
+	IF 	@iIdError=0 
+	BEGIN
+		--todo el mundo...... por ahora.		
+		insert into gpievenew.seodesarrollo2.dbo.CoberturaBeneficiarios(IdBenCf,CodCoberturaCf,FechaAlta)
+		select idBenCf,'PIEVECAF',min(coberturaBeneficiarios.fechaAlta)  
+		from gpievenew.seodesarrollo2.dbo.coberturaBeneficiarios coberturaBeneficiarios
+		inner join 	gpievenew.seodesarrollo2.dbo.beneficiarios a on a.idBenCp=coberturaBeneficiarios.idbencf
+		where codCoberturaCf in ('PIE','PJV','PIEVEOR') and
+		(a.IdTitularCf=@iIdTitularCp OR @iIdTitularCp=-1) 
+		group by idBenCf
+	end 
+-- odontologia en cafayate
+	IF 	@iIdError=0 
+	BEGIN
+		--todo el mundo...... por ahora.		
+		insert into gpievenew.seodesarrollo2.dbo.CoberturaBeneficiarios(IdBenCf,CodCoberturaCf,FechaAlta)
+		select idBenCf,'ODONCAF',min(coberturaBeneficiarios.fechaAlta)  
+		from gpievenew.seodesarrollo2.dbo.coberturaBeneficiarios coberturaBeneficiarios
+		inner join 	gpievenew.seodesarrollo2.dbo.beneficiarios a on a.idBenCp=coberturaBeneficiarios.idbencf
+		where codCoberturaCf in ('PIE','PJV','PIEVEOR') and
+		(a.IdTitularCf=@iIdTitularCp OR @iIdTitularCp=-1) 
+		group by idBenCf
+	end 
+
+	-- Rosario de la frontera todo el mundo por ahora
+	if @iIdError=0 
+	begin
+		--todo el mundo...... por ahora.		
+		insert into gpievenew.seodesarrollo2.dbo.CoberturaBeneficiarios(IdBenCf,CodCoberturaCf,FechaAlta)
+		select distinct coberturaBeneficiarios.idBenCf,'PIEVERF',min(coberturaBeneficiarios.fechaAlta)  
+		from gpievenew.seodesarrollo2.dbo.coberturaBeneficiarios coberturaBeneficiarios
+		inner join 	gpievenew.seodesarrollo2.dbo.beneficiarios a on a.idBenCp=coberturaBeneficiarios.idbencf
+		left join gpievenew.seodesarrollo2.dbo.coberturaBeneficiarios cf on cf.idBenCf=coberturaBeneficiarios.idBenCf and 
+		cf.codcoberturacf='PIEVERF'
+		where coberturaBeneficiarios.codCoberturaCf in ('PIE','PJV','PIEVEOR','PIEVEMETAN') and
+		(a.IdTitularCf=@iIdTitularCp OR @iIdTitularCp=-1) 
+		and   cf.codcoberturacf is null
+		group by coberturaBeneficiarios.idBenCf
+
+		print @@rowcount 
+		print @iIdTitularCp
+		print 'Gabrreil'
+
+
+	end
+
+	if @iIdError=0 
+	begin
+		--todo el mundo...... por ahora.		
+		insert into gpievenew.seodesarrollo2.dbo.CoberturaBeneficiarios(IdBenCf,CodCoberturaCf,FechaAlta)
+		select distinct coberturaBeneficiarios.idBenCf,'ODORF',min(coberturaBeneficiarios.fechaAlta)  
+		from gpievenew.seodesarrollo2.dbo.coberturaBeneficiarios coberturaBeneficiarios
+		inner join 	gpievenew.seodesarrollo2.dbo.beneficiarios a on a.idBenCp=coberturaBeneficiarios.idbencf
+		left join gpievenew.seodesarrollo2.dbo.coberturaBeneficiarios cf on cf.idBenCf=coberturaBeneficiarios.idBenCf and 
+		cf.codcoberturacf='ODORF'
+		where coberturaBeneficiarios.codCoberturaCf in ('PIE','PJV','PIEVEOR','PIEVEMETAN') and
+		(a.IdTitularCf=@iIdTitularCp OR @iIdTitularCp=-1) 
+		and   cf.codcoberturacf is null
+		group by coberturaBeneficiarios.idBenCf
+
+		print @@rowcount 
+		print @iIdTitularCp
+		print 'Gabrreil'
+
+
+	end
+	--cobertura de Odontologia convenio de oran
+	IF 	@iIdError=0 
+	BEGIN
+		SELECT  distinct f.IdTitularCp,pf.idPlanFichaCp
+		into #tmp_TodoOran 
+		FROM GPIEVE.pievesalud.dbo.fichas f 		
+		inner join GPIEVE.pievesalud.dbo.PlanesFichas pf on pf.idTitularCf=f.IdTitularCp
+		WHERE 
+		f.Existe=1 
+		
+		and
+			(
+			  (f.idContratanteCf=0 and f.IdCobradorCf in (SELECT idCobradorCp fROM GPIEVE.pievesalud.dbo.cobradores cobradores where idClaveLocalidadCf in (73,80)))
+														 or
+			  (f.idContratanteCf in (select idContratanteCf from GPIEVE.pievesalud.dbo.empresa_localidad where idLocalidadCf in (73,80)) or f.idcontratantecf in (141,812))
+			
+			) 
+		
+		and IdTitularCP>0
+		AND 
+		(IdTitularCp=@iIdTitularCp OR @iIdTitularCp=-1) --Persona especifica
+		
+		
+		-- Insertar las coberturas de oran		
+		INSERT INTO gpievenew.seodesarrollo2.dbo.CoberturaBeneficiarios(IdBenCf,CodCoberturaCf,FechaAlta)
+		
+		SELECT distinct beneficiarios.IdBenCP,
+		'ODONORA' CodCoberturaCf,
+		min		
+		(case when isnull(planesfichas.FechaAlta,GETDATE())<={ d '1900-01-01'} OR
+				  isnull(planesfichas.FechaAlta,GETDATE())>{ d '2019-01-01'} THEN 
+	          		GETDATE() ELSE isnull(planesfichas.FechaAlta,GETDATE()) END) FechaAlta  
+		--,f.idTitularCp into temporaloran
+		
+		FROM  gpieve.PieveSalud.dbo.Fichas f
+		inner join #tmp_TodoOran o on f.idTitularCp=o.IdTitularCp
+		inner Join gpieve.PieveSalud.dbo.Beneficiarios Beneficiarios on f.IdTitularCp=Beneficiarios.IdTitularCf		
+		AND f.Existe=1 AND f.IdTitularCp>0 and Beneficiarios.Existe=1 --ficha, personas y Identificador coherente.
+		INNER JOIN  gpieve.PieveSalud.dbo.PlanesFichas PlanesFichas ON PlanesFichas.idPlanFichaCp=O.idPlanFichaCp		
+				  	
+		--insertar siempre y cuando ya no la tenga insertada.		
+		LEFT JOIN  gpievenew.seodesarrollo2.dbo.CoberturaBeneficiarios cb ON cb.IdBenCf=beneficiarios.IdBenCP 
+		AND cb.CodCoberturaCf Collate Database_Default  = 'ODONORA'
+		WHERE 
+		cb.IdCoberturaBeneficiariosCp IS NULL	-- que la persona no tenga ya la cobertura.		
+
+		and
+		(f.IdTitularCp=@iIdTitularCp OR @iIdTitularCp=-1) 
+
+		GROUP BY beneficiarios.IdBenCP,f.idTitularCp
+
+		--select distinct idTitularCp from temporaloran
+    end
+end
+	
+
+--Generacion de informacion de pagos
+if @bInformacionPago=1
+begin
+	PRINT 'Actualizando informaci n de pagos'
+	
+	-- Termina actualizando en la tabla fichas columnas fechapago, ultmesperiodoPago,ultAnioPeriodoPago 
+	--  Actualizacion de los pagos
+	UPDATE fichasseo
+	set fichasseo.FechaPago = CASE WHEN fichasps.IdContratanteCf > 0 THEN DATEADD(dd,-DAY(GETDATE())+1,GETDATE()) 
+							  ELSE isnull(  case when vupc.FechaPago> GETDATE() THEN getdate() ELSE vupc.FechaPago end,
+							  CONVERT(smalldatetime, CONVERT(DATETIME, CONVERT(varchar, case when fichasps.AnioPeriodoIngreso=0 then 2007 else fichasps.AnioPeriodoIngreso end) 
+							+ '-' + CONVERT(varchar, case when fichasps.MesPeriodoIngreso=0 then 1 else fichasps.MesPeriodoIngreso end) + '-20', 102))
+							  )  
+	                          END,
+		
+	fichasseo.UltMesPeriodoPago = CASE WHEN fichasps.IdContratanteCf > 0 THEN MONTH(GETDATE()) ELSE isnull(vupc.MesPeriodo,fichasps.MesPeriodoIngreso) end,
+	fichasseo.UltAnioPeriodoPago = CASE WHEN fichasps.IdContratanteCf > 0 THEN YEAR(GETDATE()) ELSE ISNULL(vupc.AnioPeriodo,fichasps.AnioPeriodoIngreso) end
+	FROM gpievenew.seodesarrollo2.dbo.Fichas fichasSeo 
+	INNER JOIN gpieve.PieveSalud.dbo.fichas fichasPS ON fichasseo.IdTitularCp=fichasps.IdTitularCp
+	LEFT JOIN gpieve.PieveSalud.dbo.view_UltimoPagoCondonacion vupc ON fichasPS.idTitularCp=vupc.IdTitularCF
+	WHERE (fichasps.IdTitularCp=@iIdTitularCp OR @iIdTitularCp=-1)
+	
+	SET @iIdError=@@ERROR
+	
+END
+
+
+--Informacion de carencia 
+if @bDeterminacionCarencia=1
+BEGIN
+	PRINT 'Actualizando informaci n de carencia.'
+	declare @dFechaTopePago DATETIME
+	DECLARE @dFechaVigencia DATETIME
+	DECLARE @iMes int
+	DECLARE @iAnio int
+
+	-- Certificados que perderan vigencia (por pagos atrasados) (solo individuales)
+	select idTitularCf,count(c.IdCuponCp) iCantidadPagosAtrasadosEnMesactual
+	into #tmp_PerderanVigencia
+	from GPIEVE.pievesalud.dbo.cupones  c
+	inner JOIN GPIEVE.pievesalud.dbo.fichas f on c.idTitularCf=f.idTitularCp
+	and f.existe=1	and	c.Numero>0 and c.estado in ('P','C') -- Numerados y pagados o condonados
+	and c.idContratanteCf=0 --Individuales
+	and c.AnioPeriodo * 12 + c.MesPeriodo < year(getdate()) * 12 + month(getdate())
+	and month (c.FechaPago) + year(c.FechaPago) * 12 = year(getdate()) * 12 + month(getdate())
+	and f.idContratanteCf=0 
+	and (f.IdTitularCp=@iIdTitularCp OR @iIdTitularCp=-1) --Para un certificado o para todos
+	group by idTitularCf
+	having count(c.IdCuponCp)>=2 --Dos o mas pierden
+
+	
+	--Avanzar al siguente periodo	
+    If @iMesPeriodo = 12 
+    begin
+      set @iMes = 1
+      set @iAnio = @iAnioPeriodo + 1
+    end
+    else
+    begin
+      SET @iMes = @iMesPeriodo + 1
+      SET @iAnio = @iAnioPeriodo
+    END
+    
+    --Determinar el proximo periodo.
+    --Ej. 03-2013 --> pago tope hasta el 10-04-2013
+	SET @dFechaTopePago =  CONVERT(DATETIME, CONVERT(VARCHAR,@iAnio) + '-' + CONVERT(VARCHAR,@iMes)  + '-10')
+	
+	SET @imes=month(@dFechaTopePago)
+	SET @iAnio=year(@dFechaTopePago)
+	
+	--Determinar a o y periodo de nueva vigencia.
+	If @imes + @iCarencia > 12 
+    begin
+      set @iMes = @imes + @iCarencia -12	-- determinacion del periodo
+      set @iAnio = @iAnio + 1
+    end
+    else
+    begin
+      SET @iMes = @iMes + @iCarencia
+      SET @iAnio = @iAnio
+    END
+    -- Establecer la fecha de vigencia.
+    SET @dFechaVigencia=CONVERT(DATETIME, CONVERT(VARCHAR,@iAnio) + '-' + CONVERT(VARCHAR,@iMes)  + '-01')
+    
+    PRINT 'vigencia....'
+    PRINT @dFechaVigencia
+    
+	--Actualizacion de la vigencia.
+	UPDATE FichasSeo
+	SET fichasSeo.FechaVigenciaPago= CASE WHEN fichasps.IdContratanteCf >0 THEN dateadd(dd,-DAY(GETDATE()),GETDATE())  --dateadd(dd,-9,@dFechaTopePago) siempre en vigencia al primer dia del mes.
+									 else 
+--										CASE WHEN ISNULL(vupc.FechaPago,{ d '2030-01-01'})>@dFechaTopePago
+--										THEN
+--											@dFechaVigencia
+--										ELSE
+--											dateadd(dd,-9,@dFechaTopePago)
+--										end	         
+										
+										--Individuales que pierden vigencia al siguiente mes al dia primero
+										dateadd(d,1-day(dateadd(m, 1,getdate())),dateadd(m, 1,getdate()))
+                        
+	                                 end
+		
+	FROM gpievenew.seodesarrollo2.dbo.Fichas fichasSeo 
+	INNER JOIN gpieve.PieveSalud.dbo.fichas fichasPS ON fichasseo.IdTitularCp=fichasps.IdTitularCp
+	LEFT JOIN gpieve.PieveSalud.dbo.view_UltimoPagoCondonacion vupc ON fichasPS.idTitularCp=vupc.IdTitularCF
+	LEFT join #tmp_PerderanVigencia tpv on tpv.idTitularCf=fichasseo.idTitularCp
+
+	WHERE (fichasps.IdTitularCp=@iIdTitularCp OR @iIdTitularCp=-1) AND 
+	(fichasSeo.FechaVigenciaPago IS NULL 
+	and 
+	(
+	(fichasps.IdContratanteCf >0 AND fichasSeo.FechaVigenciaPago>GETDATE() )
+							or
+	( fichasps.IdContratanteCf=0 and isnull(tpv.idTitularCf,0)>0 and
+	  fichasSeo.FechaVigenciaPago< dateadd(d,1-day(dateadd(m, 1,getdate())),dateadd(m, 1,getdate())) ) --Individuales que pierden vigencia
+	)
+	
+	)
+
+
+	UPDATE FichasSeo
+	SET fichasSeo.FechaVigenciaPago= CASE WHEN fichasps.IdContratanteCf >0 THEN  dateadd(dd,-DAY(GETDATE()),GETDATE())  -- convenios al dia.
+									 else 
+										vupc.FechaPago --desde el primer pago en la empresa los nulos (los nuevos)                        
+	                                 end
+		
+	FROM gpievenew.seodesarrollo2.dbo.Fichas fichasSeo 
+	INNER JOIN gpieve.PieveSalud.dbo.fichas fichasPS ON fichasseo.IdTitularCp=fichasps.IdTitularCp
+	LEFT JOIN gpieve.PieveSalud.dbo.view_UltimoPagoCondonacion vupc ON fichasPS.idTitularCp=vupc.IdTitularCF
+    where 
+	(fichasps.IdTitularCp=@iIdTitularCp OR @iIdTitularCp=-1) 
+	and fichasseo.FechaVigenciaPago = @FechaSinVigenciaIncorporacion	-- Nulos (los nuevos)
+    and fichasseo.existe=1
+	and 
+   (
+     fichasPS.idContratantecf>0 or 
+	(
+		fichasps.idContratanteCf=0 and isnull(vupc.IdTitularCF,0)>0
+	
+     )
+	 
+   )
+    
+    --select * from gpieve.PieveSalud.dbo.view_UltimoPagoCondonacion where idTitularcf=83449
+
+    
+	SET @iIdError=@@ERROR
+	
+end	
+
+	print 'La gente del JVG. este mes sale los 10 primeros dias al dia y con vigencia inmediata.'
+	UPDATE fichasseo
+	SET fichasseo.FechaVigenciaPago =  DATEADD(dd,-DAY(GETDATE())+1,GETDATE()),	--En vigencia la gente de jvc
+	    fichasseo.UltMesPeriodoPago = @iMesPeriodo,
+	    fichasseo.UltAnioPeriodoPago =@iAnioPeriodo,
+	    fichasseo.FechaPago = DATEADD(dd,-DAY(GETDATE())+1,GETDATE()) --01/05/2013
+	FROM gpievenew.seodesarrollo2.dbo.Fichas fichasSeo
+	INNER JOIN gpievenew.seodesarrollo2.dbo.Beneficiarios b ON b.IdTitularCf=fichasSeo.IdTitularCp
+	INNER JOIN gpievenew.seodesarrollo2.dbo.CoberturaBeneficiarios cb ON cb.IdBenCf=b.IdBenCp
+	WHERE (fichasseo.IdTitularCp=@iIdTitularCp OR @iIdTitularCp=-1) AND cb.CodCoberturaCf='PJV'
+	SET @iIdError=@@ERROR
+	
+	-- Los que tiene cobertura 'PJV' y sinsal cambiar a SSALPJV
+	PRINT 'Actualizando cobertura'
+	UPDATE cb
+	SET cb.CodCoberturaCf ='SSALPJV' 
+	FROM gpievenew.seodesarrollo2.dbo.CoberturaBeneficiarios cb
+	
+	INNER JOIN gpievenew.seodesarrollo2.dbo.beneficiarios b ON cb.IdBenCf=b.idBencp
+	
+	WHERE codcoberturacf='SINSAL'
+	AND cb.IdBenCf IN ( SELECT idBenCf FROM gpievenew.seodesarrollo2.dbo.CoberturaBeneficiarios d WHERE d.CodCoberturaCf='PJV' )
+	AND (b.IdTitularCf=@iIdTitularCp OR @iIdTitularCp=-1)
+	
+	
+	
+	
+	SET @iIdError=@@ERROR
+
+	-- Actualizcion de informacion de METAN
+	DELETE cb	 
+	FROM gpievenew.seodesarrollo2.dbo.CoberturaBeneficiarios cb
+	INNER JOIN gpievenew.seodesarrollo2.dbo.beneficiarios b ON cb.IdBenCf=b.idBencp
+	INNER JOIN gpievenew.seodesarrollo2.dbo.Fichas f ON f.IdConvenioCf=1 AND f.IdTitularCp=b.IdTitularCf -- Solo cobetura de Pieve Salud
+	where cb.CodCoberturaCf in ('PIEVEMETAN','SINSALMETAN','ODONMETAN')
+	and (b.IdTitularCf=@iIdTitularCp OR @iIdTitularCp=-1)
+
+
+	select distinct  b.IdBenCp,'PIEVEMETAN' sCobertura,{ d '2015-01-01'} dFecha 
+	into #tmp_AgegregarCoberturaMetan_01
+	from gpievenew.seodesarrollo2.dbo.fichas a
+	inner join gpievenew.seodesarrollo2.dbo.beneficiarios b
+	on a.IdTitularCp=b.idTitularCF
+	left Join gpievenew.seodesarrollo2.dbo.coberturabeneficiarios c
+	on c.idBenCf=b.idBenCp
+	and c.codCoberturaCf='PIEVEMETAN'
+	where c.codCoberturaCf is null
+	and (b.IdTitularCf=@iIdTitularCp OR @iIdTitularCp=-1)
+	
+	select distinct  b.IdBenCp,'SINSALMETAN' sCobertura,{ d '2015-01-01'} dFecha 
+	into #tmp_AgegregarCoberturaMetan_02
+	from gpievenew.seodesarrollo2.dbo.fichas a
+	inner join gpievenew.seodesarrollo2.dbo.beneficiarios b
+	on a.IdTitularCp=b.idTitularCF
+	left Join gpievenew.seodesarrollo2.dbo.coberturabeneficiarios c
+	on c.idBenCf=b.idBenCp
+	and c.codCoberturaCf='SINSALMETAN'
+	where c.codCoberturaCf is null
+	and (b.IdTitularCf=@iIdTitularCp OR @iIdTitularCp=-1)
+	
+	select distinct  b.IdBenCp,'ODONMETAN' sCobertura,{ d '2015-01-01'} dFecha 
+	into #tmp_AgegregarCoberturaMetan_03
+	from gpievenew.seodesarrollo2.dbo.fichas a
+	inner join gpievenew.seodesarrollo2.dbo.beneficiarios b
+	on a.IdTitularCp=b.idTitularCF
+	left Join gpievenew.seodesarrollo2.dbo.coberturabeneficiarios c
+	on c.idBenCf=b.idBenCp
+	and c.codCoberturaCf='ODONMETAN'
+	where c.codCoberturaCf is null
+	and (b.IdTitularCf=@iIdTitularCp OR @iIdTitularCp=-1)
+	
+	select * into #tmp_metan
+	from 
+	(
+	select IdBenCp,sCobertura,dFecha from #tmp_AgegregarCoberturaMetan_01
+	union all 
+	select IdBenCp,sCobertura,dFecha from #tmp_AgegregarCoberturaMetan_02
+	union all
+	select IdBenCp,sCobertura,dFecha from #tmp_AgegregarCoberturaMetan_03
+	) t 
+
+	insert into gpievenew.seodesarrollo2.dbo.CoberturaBeneficiarios(idBenCf,CodCoberturaCf,fechaalta)
+	select IdBenCp,sCobertura,dFecha from #tmp_metan 
+	
+	-- Actualizcion de informacion de CAFYATE
+	DELETE cb	 
+	FROM gpievenew.seodesarrollo2.dbo.CoberturaBeneficiarios cb
+	INNER JOIN gpievenew.seodesarrollo2.dbo.beneficiarios b ON cb.IdBenCf=b.idBencp
+	INNER JOIN gpievenew.seodesarrollo2.dbo.Fichas f ON f.IdConvenioCf=1 AND f.IdTitularCp=b.IdTitularCf
+	where cb.CodCoberturaCf in ('PIEVECAF','ODONCAF')
+	and (b.IdTitularCf=@iIdTitularCp OR @iIdTitularCp=-1)
+	
+	
+	
+	select distinct  b.IdBenCp,'PIEVECAF' sCobertura,{ d '2015-01-01'} dFecha 
+	into #tmp_AgegregarCoberturaCafa_01
+	from gpievenew.seodesarrollo2.dbo.fichas a
+	inner join gpievenew.seodesarrollo2.dbo.beneficiarios b
+	on a.IdTitularCp=b.idTitularCF
+	left Join gpievenew.seodesarrollo2.dbo.coberturabeneficiarios c
+	on c.idBenCf=b.idBenCp
+	and c.codCoberturaCf='PIEVECAF'
+	where c.codCoberturaCf is null
+	and (b.IdTitularCf=@iIdTitularCp OR @iIdTitularCp=-1)
+	
+	select distinct  b.IdBenCp,'ODONCAF' sCobertura,{ d '2015-01-01'} dFecha 
+	into #tmp_AgegregarCoberturaCafa_02
+	from gpievenew.seodesarrollo2.dbo.fichas a
+	inner join gpievenew.seodesarrollo2.dbo.beneficiarios b
+	on a.IdTitularCp=b.idTitularCF
+	left Join gpievenew.seodesarrollo2.dbo.coberturabeneficiarios c
+	on c.idBenCf=b.idBenCp
+	and c.codCoberturaCf='ODONCAF'
+	where c.codCoberturaCf is null
+	and (b.IdTitularCf=@iIdTitularCp OR @iIdTitularCp=-1)
+	
+	select * into #tmp_Cafa
+	from 
+	(
+	select IdBenCp,sCobertura,dFecha from #tmp_AgegregarCoberturaCafa_01
+	union all 
+	select IdBenCp,sCobertura,dFecha from #tmp_AgegregarCoberturaCafa_02	
+	) t 
+	
+	insert into gpievenew.seodesarrollo2.dbo.CoberturaBeneficiarios(idBenCf,CodCoberturaCf,fechaalta)
+	select IdBenCp,sCobertura,dFecha from #tmp_Cafa 
+	
+	-- Actualizacion de quebrachal	
+	
+	
+	DELETE cb	 
+	FROM gpievenew.seodesarrollo2.dbo.CoberturaBeneficiarios cb
+	INNER JOIN gpievenew.seodesarrollo2.dbo.beneficiarios b ON cb.IdBenCf=b.idBencp
+	INNER JOIN gpievenew.seodesarrollo2.dbo.Fichas f ON f.IdConvenioCf=1 AND f.IdTitularCp=b.IdTitularCf
+	where cb.CodCoberturaCf in ('PIEVEQUEB','ODONQUEB')
+	and (b.IdTitularCf=@iIdTitularCp OR @iIdTitularCp=-1)
+	
+	
+	
+	select distinct  b.IdBenCp,'PIEVEQUEB' sCobertura,{ d '2015-01-01'} dFecha 
+	into #tmp_AgegregarCoberturaQueb_01
+	from gpievenew.seodesarrollo2.dbo.fichas a
+	inner join gpievenew.seodesarrollo2.dbo.beneficiarios b
+	on a.IdTitularCp=b.idTitularCF
+	left Join gpievenew.seodesarrollo2.dbo.coberturabeneficiarios c
+	on c.idBenCf=b.idBenCp
+	and c.codCoberturaCf='PIEVEQUEB'
+	where c.codCoberturaCf is null
+	and (b.IdTitularCf=@iIdTitularCp OR @iIdTitularCp=-1)
+	
+	select distinct  b.IdBenCp,'ODONQUEB' sCobertura,{ d '2015-01-01'} dFecha 
+	into #tmp_AgegregarCoberturaQueb_02
+	from gpievenew.seodesarrollo2.dbo.fichas a
+	inner join gpievenew.seodesarrollo2.dbo.beneficiarios b
+	on a.IdTitularCp=b.idTitularCF
+	left Join gpievenew.seodesarrollo2.dbo.coberturabeneficiarios c
+	on c.idBenCf=b.idBenCp
+	and c.codCoberturaCf='ODONQUEB'
+	where c.codCoberturaCf is null
+	and (b.IdTitularCf=@iIdTitularCp OR @iIdTitularCp=-1)
+	
+	select * into #tmp_QUEB
+	from 
+	(
+	select IdBenCp,sCobertura,dFecha from #tmp_AgegregarCoberturaQueb_01
+	union all 
+	select IdBenCp,sCobertura,dFecha from #tmp_AgegregarCoberturaQueb_02	
+	) t 
+	
+	insert into gpievenew.seodesarrollo2.dbo.CoberturaBeneficiarios(idBenCf,CodCoberturaCf,fechaalta)
+	select IdBenCp,sCobertura,dFecha from #tmp_QUEB 
+	
+	
+	--Actualizacion de las cobertura odontologicas para todo el Mundo
+	
+	DELETE cb	 
+	FROM gpievenew.seodesarrollo2.dbo.CoberturaBeneficiarios cb
+	INNER JOIN gpievenew.seodesarrollo2.dbo.beneficiarios b ON cb.IdBenCf=b.idBencp
+	INNER JOIN gpievenew.seodesarrollo2.dbo.Fichas f ON f.IdConvenioCf=1 AND f.IdTitularCp=b.IdTitularCf
+	where cb.CodCoberturaCf in ('ODO_BASE','ODO_02')
+	and (b.IdTitularCf=@iIdTitularCp OR @iIdTitularCp=-1)
+	
+	
+	select distinct  b.IdBenCp,'ODO_BASE' sCobertura,{ d '2015-01-01'} dFecha 
+	into #tmp_AgegregarCoberturaODO_01
+	from gpievenew.seodesarrollo2.dbo.fichas a
+	inner join gpievenew.seodesarrollo2.dbo.beneficiarios b
+	on a.IdTitularCp=b.idTitularCF
+	left Join gpievenew.seodesarrollo2.dbo.coberturabeneficiarios c
+	on c.idBenCf=b.idBenCp
+	and c.codCoberturaCf='ODO_BASE'
+	where c.codCoberturaCf is null
+	and (b.IdTitularCf=@iIdTitularCp OR @iIdTitularCp=-1)
+	
+	select distinct  b.IdBenCp,'ODO_02' sCobertura,{ d '2015-01-01'} dFecha 
+	into #tmp_AgegregarCoberturaODO_02
+	from gpievenew.seodesarrollo2.dbo.fichas a
+	inner join gpievenew.seodesarrollo2.dbo.beneficiarios b
+	on a.IdTitularCp=b.idTitularCF
+	left Join gpievenew.seodesarrollo2.dbo.coberturabeneficiarios c
+	on c.idBenCf=b.idBenCp
+	and c.codCoberturaCf='ODO_02'
+	where c.codCoberturaCf is null
+	and (b.IdTitularCf=@iIdTitularCp OR @iIdTitularCp=-1)
+	
+	
+	
+	select * into #tmp_ODO
+	from 
+	(
+	select IdBenCp,sCobertura,dFecha from #tmp_AgegregarCoberturaODO_01
+	union all 
+	select IdBenCp,sCobertura,dFecha from #tmp_AgegregarCoberturaODO_02	
+	) t 
+	
+	insert into gpievenew.seodesarrollo2.dbo.CoberturaBeneficiarios(idBenCf,CodCoberturaCf,fechaalta)
+	select IdBenCp,sCobertura,dFecha from #tmp_ODO
+
+IF @iIdTitularCp =-1
+BEGIN
+	INSERT GPIEVENEW.seodesarrollo2.dbo.CoberturaBeneficiarios
+	(IdBenCf,CodCoberturaCf,FechaAlta,Orden,HabilitadoTemporal)
+	SELECT IdBenCf,CodCoberturaCf,FechaAlta,Orden,HabilitadoTemporal
+	FROM GPIEVENEW.seodesarrollo2.dbo.CobBenficiariosPArticulares AS cbpa 
+END 
+	
+
+IF @iIdError=0
+	begin
+		--COMMIT TRAN Migracion_Afiliados
+		PRINT 'Proceso finalizado Correctamente'
+		SELECT 0 iError 
+	END
+	ELSE
+	BEGIN
+		--ROLLBACK TRAN Migracion_Afiliados
+		PRINT 'Error procesando informaci n'
+		SELECT @iIdError iError
+	END
+
+--parte uno
+UPDATE gpievenew.seodesarrollo2.dbo.Beneficiarios SET IdVinculoCf =50 WHERE Existe =0 AND IdVinculoCf =1
+--parte dos
+	INSERT INTO gpievenew.seodesarrollo2.dbo.CoberturaBeneficiarios(IdBenCf,CodCoberturaCf,FechaAlta)	
+	SELECT  DISTINCT cb.IdBenCf,'INI' CodCoberturaCf ,
+		case when isnull(PlanesBeneficiarios.FechaAlta,GETDATE())<={ d '1900-01-01'} OR
+				  isnull(PlanesBeneficiarios.FechaAlta,GETDATE())>{ d '2019-01-01'} THEN 
+	          		GETDATE() ELSE isnull(PlanesBeneficiarios.FechaAlta,GETDATE()) END FechaAlta 
+		FROM		
+		gpieve.PieveSalud.dbo.PlanesFichas PlanesFichas 
+		inner Join gpieve.PieveSalud.dbo.Beneficiarios Beneficiarios on PlanesFichas.IdTitularCf=Beneficiarios.IdTitularCf	
+		AND planesfichas.IdRubroCf=7		--cobertura de pieve
+		and Beneficiarios.Existe=1
+		Inner Join gpieve.PieveSalud.dbo.PlanesBeneficiarios PlanesBeneficiarios on PlanesBeneficiarios.IdRubroCf=PlanesFichas.idRubroCf and
+		Beneficiarios.IdBenCp=PlanesBeneficiarios.IdBenCf 
+		INNER JOIN gpieve.PieveSalud.dbo.Fichas f ON f.IdTitularCp=PlanesFichas.IdTitularCF AND f.Existe=1 AND f.IdTitularCp>0
+		inner Join GPIEVENEW.seodesarrollo2.dbo.CoberturaBeneficiarios cb on cb.IdBenCf=beneficiarios.IdBenCP
+		and cb.CodCoberturaCf='PIE'
+--parte 3
+
+UPDATE CoberturaBeneficiarios SET  dbo.CoberturaBeneficiarios.FechaAlta =dbo.Beneficiarios.FechaAlta
+FROM CoberturaBeneficiarios
+INNER JOIN dbo.Beneficiarios ON dbo.Beneficiarios.IdBenCp = dbo.CoberturaBeneficiarios.IdBenCf
+INNER JOIN dbo.Fichas ON dbo.Fichas.IdTitularCp =dbo.Beneficiarios.IdTitularCf 
+WHERE  dbo.Beneficiarios.FechaAlta < dbo.CoberturaBeneficiarios.FechaAlta  AND dbo.CoberturaBeneficiarios.CodCoberturaCf ='ODONORA'
+
+
+UPDATE CoberturaBeneficiarios SET  dbo.CoberturaBeneficiarios.FechaAlta =dbo.Beneficiarios.FechaAlta
+FROM CoberturaBeneficiarios
+INNER JOIN dbo.Beneficiarios ON dbo.Beneficiarios.IdBenCp = dbo.CoberturaBeneficiarios.IdBenCf
+INNER JOIN dbo.Fichas ON dbo.Fichas.IdTitularCp =dbo.Beneficiarios.IdTitularCf 
+WHERE  dbo.Beneficiarios.FechaAlta < dbo.CoberturaBeneficiarios.FechaAlta  AND dbo.CoberturaBeneficiarios.CodCoberturaCf ='PIE'	
+
+--parte 4
+
+INSERT dbo.CoberturaBeneficiarios (IdBenCf,CodCoberturaCf,FechaAlta)  
+SELECT IdBenCf ,CASE WHEN CodCoberturaCf ='INI' THEN 'INIJVG'
+WHEN CodCoberturaCf ='ODO' THEN 'ODOJVG'
+WHEN CodCoberturaCf ='SINSAL' THEN 'SINSALJVG' END CODFINAL,  dbo.CoberturaBeneficiarioS.FechaAlta 
+ FROM dbo.CoberturaBeneficiarios 
+ INNER JOIN dbo.Beneficiarios ON dbo.CoberturaBeneficiarios.IdBenCf = dbo.Beneficiarios.IdBenCp AND dbo.Beneficiarios.Existe =1
+ INNER JOIN FICHAS ON dbo.Beneficiarios.IdTitularCf = dbo.Fichas.IdTitularCp AND dbo.FichaS.Existe =1
+WHERE CodCoberturaCf IN ('INI','ODO','SINSAL')
+
+
+
+
+
+
+
+
+go
+

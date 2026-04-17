@@ -208,66 +208,6 @@
                         </div>
                       </div>
 
-                      <!-- Porcentaje IPS -->
-                        <div class="flex items-start gap-4">
-                            <label class="text-sm font-medium text-gray-700 dark:text-gray-300 w-32 flex-shrink-0 pt-2">
-                                Porcentaje IPS <span class="text-red-500">*</span>
-                            </label>
-                            <div class="flex-1 max-w-xs">
-                                <div class="relative">
-                                    <input
-                                        v-model.number="form.porc_ips"
-                                        type="number"
-                                        step="0.01"
-                                        min="-100"
-                                        max="100"
-                                        placeholder="0"
-                                        required
-                                        class="w-full pr-8 pl-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
-                                        :class="{ 'border-red-500': form.errors.porc_ips }"
-                                    />
-                                    <span class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500">%</span>
-                                </div>
-                                <p class="text-xs text-gray-500 mt-1">Porcentaje aplicado sobre el valor IPS (puede ser negativo)</p>
-                                <div v-if="form.errors.porc_ips" class="text-red-500 text-sm mt-1">
-                                    {{ form.errors.porc_ips }}
-                                </div>
-                            </div>
-                        </div>
-
-                      <!-- Valor Referencia (Calculado) -->
-                      <div class="flex items-start gap-4">
-                        <label class="text-sm font-medium text-gray-700 dark:text-gray-300 w-32 flex-shrink-0 pt-2">
-                          Valor Referencia
-                        </label>
-                        <div class="flex-1 max-w-xs">
-                          <div class="relative">
-                            <span class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">$</span>
-                            <input
-                              :value="valorReferenciaCalculado"
-                              type="text"
-                              readonly
-                              class="w-full pl-8 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 cursor-not-allowed"
-                            />
-                          </div>
-                          <p class="text-xs text-gray-500 mt-1">
-                            Calculado automáticamente: Valor IPS {{ form.porc_ips >= 0 ? '+' : '' }}{{ form.porc_ips || 0 }}%
-                          </p>
-                        </div>
-                      </div>
-
-
-
-                        <!-- Preview de precios -->
-                        <div v-if="form.valor_ips" class="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-                            <h4 class="text-sm font-medium text-blue-800 dark:text-blue-200 mb-2">Vista previa de cálculo:</h4>
-                            <div class="text-sm text-blue-700 dark:text-blue-300 space-y-1">
-                                <div>Valor IPS: ${{ formatCurrency(form.valor_ips) }}</div>
-                                <div>Porcentaje IPS: {{ form.porc_ips >= 0 ? '+' : '' }}{{ form.porc_ips || 0 }}%</div>
-                                <div class="font-bold border-t border-blue-300 pt-1 mt-1">
-                                    Valor Referencia: ${{ formatCurrency(valorReferenciaCalculado) }}
-                                </div>
-                            </div>
                         </div>
                     </div>
                 </div>
@@ -379,12 +319,7 @@ const form = useForm({
     observaciones: ''
 })
 
-// Computed para calcular el valor de referencia automáticamente con redondeo estándar
-const valorReferenciaCalculado = computed(() => {
-    const valorIps = parseFloat(form.valor_ips) || 0
-    const porcIps = parseFloat(form.porc_ips) || 0
-    return Math.round(valorIps * (1 + (porcIps / 100)))
-})
+    // Computada omitida
 
 // Campo reactivo para el checkbox basado en estado
 const activo = computed({
@@ -479,18 +414,14 @@ watch(() => form.valor_ips, (newValue) => {
     }
 })
 
-watch(() => form.porc_ips, (newValue) => {
-  if (newValue && newValue < -100) {
-    form.porc_ips = -100
-  }
-})
+// Fin validaciones numéricas
 
 const submit = () => {
     console.log('=== ENVÍO DE DATOS ===')
     console.log('Datos del formulario:', form.data())
 
     // Verificar campos requeridos
-    if (!form.codigo || !form.nombre || !form.rubro_id || !form.valor_ips || form.porc_ips === '') {
+    if (!form.codigo || !form.nombre || !form.rubro_id || !form.valor_ips) {
         alert('Por favor complete todos los campos requeridos')
         return
     }

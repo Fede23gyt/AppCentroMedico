@@ -202,64 +202,40 @@
                                     </div>
                                 </div>
                             </div>
+                        </div>
 
-                            <!-- Porcentaje IPS -->
-                            <div class="flex items-start gap-4">
-                                <label class="text-sm font-medium text-gray-700 dark:text-gray-300 w-32 flex-shrink-0 pt-2">
-                                    Porcentaje IPS <span class="text-red-500">*</span>
-                                </label>
-                                <div class="flex-1 max-w-xs">
-                                    <div class="relative">
-                                        <input
-                                            v-model.number="form.porc_ips"
-                                            type="number"
-                                            step="0.01"
-                                            min="-100"
-                                            max="100"
-                                            placeholder="0"
-                                            required
-                                            class="w-full pr-8 pl-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
-                                            :class="{ 'border-red-500': form.errors.porc_ips }"
-                                        />
-                                        <span class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500">%</span>
-                                    </div>
-                                    <div class="text-xs text-gray-500 mt-1">Porcentaje aplicado sobre el valor IPS (puede ser negativo)</div>
-                                    <div v-if="form.errors.porc_ips" class="text-red-500 text-sm mt-1">
-                                        {{ form.errors.porc_ips }}
-                                    </div>
+                        <!-- Grilla de Precios Escalonados -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700">
+                            <!-- Precio 1 -->
+                            <div>
+                                <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Precio 1 (Ej: INI)</label>
+                                <div class="relative">
+                                    <span class="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400">$</span>
+                                    <input v-model="form.precio_1" type="number" step="0.01" class="w-full pl-6 pr-2 py-1.5 text-sm border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white" />
                                 </div>
                             </div>
-                        </div>
-
-                        <!-- Valor Referencia (Calculado) -->
-                        <div class="flex items-start gap-4">
-                        <label class="text-sm font-medium text-gray-700 dark:text-gray-300 w-32 flex-shrink-0 pt-2">
-                          Valor Referencia
-                        </label>
-                        <div class="flex-1 max-w-xs">
-                          <div class="relative">
-                            <span class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">$</span>
-                            <input
-                              :value="valorReferenciaCalculado"
-                              type="text"
-                              readonly
-                              class="w-full pl-8 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 cursor-not-allowed"
-                            />
-                          </div>
-                          <div class="text-xs text-gray-500 mt-1">
-                            Calculado automáticamente: Valor IPS {{ form.porc_ips >= 0 ? '+' : '' }}{{ form.porc_ips || 0 }}%
-                          </div>
-                        </div>
-                      </div>
-
-                        <!-- Vista previa del cálculo -->
-                        <div v-if="form.valor_ips" class="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-                            <h4 class="text-sm font-medium text-blue-800 dark:text-blue-200 mb-2">Vista previa de cálculo:</h4>
-                            <div class="text-sm text-blue-700 dark:text-blue-300 space-y-1">
-                                <div>Valor IPS: ${{ formatCurrency(form.valor_ips) }}</div>
-                                <div>Porcentaje IPS: {{ form.porc_ips >= 0 ? '+' : '' }}{{ form.porc_ips || 0 }}%</div>
-                                <div class="font-bold border-t border-blue-300 pt-1 mt-1">
-                                    Valor Referencia: ${{ formatCurrency(valorReferenciaCalculado) }}
+                            <!-- Precio 2 -->
+                            <div>
+                                <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Precio 2 (Ej: SINSAL)</label>
+                                <div class="relative">
+                                    <span class="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400">$</span>
+                                    <input v-model="form.precio_2" type="number" step="0.01" class="w-full pl-6 pr-2 py-1.5 text-sm border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white" />
+                                </div>
+                            </div>
+                            <!-- Precio 3 -->
+                            <div>
+                                <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Precio 3 (Ej: PART)</label>
+                                <div class="relative">
+                                    <span class="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400">$</span>
+                                    <input v-model="form.precio_3" type="number" step="0.01" class="w-full pl-6 pr-2 py-1.5 text-sm border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white" />
+                                </div>
+                            </div>
+                            <!-- Precio 4 -->
+                            <div>
+                                <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Precio 4 (Ej: PRE)</label>
+                                <div class="relative">
+                                    <span class="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400">$</span>
+                                    <input v-model="form.precio_4" type="number" step="0.01" class="w-full pl-6 pr-2 py-1.5 text-sm border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white" />
                                 </div>
                             </div>
                         </div>
@@ -390,16 +366,15 @@ const form = useForm({
     valor_ips: props.prestacion.valor_ips,
     precio_afiliado: props.prestacion.precio_afiliado,
     porc_ips: props.prestacion.porc_ips || 0,
+    precio_1: props.prestacion.precio_1 || 0,
+    precio_2: props.prestacion.precio_2 || 0,
+    precio_3: props.prestacion.precio_3 || 0,
+    precio_4: props.prestacion.precio_4 || 0,
     uvr: props.prestacion.uvr,
     observaciones: props.prestacion.observaciones
 })
 
-// Computed para calcular el valor de referencia automáticamente con redondeo estándar
-const valorReferenciaCalculado = computed(() => {
-    const valorIps = parseFloat(form.valor_ips) || 0
-    const porcIps = parseFloat(form.porc_ips) || 0
-    return Math.round(valorIps * (1 + (porcIps / 100)))
-})
+    // Componentes omitidos
 
 // Campo reactivo para el checkbox basado en estado
 const activo = computed({
@@ -419,20 +394,11 @@ const hasChanges = computed(() => {
         form.estado !== props.prestacion.estado ||
         form.rubro_id !== props.prestacion.rubro_id ||
         normalizeNumber(form.precio_general) !== normalizeNumber(props.prestacion.precio_general) ||
-        normalizeNumber(form.valor_ips) !== normalizeNumber(props.prestacion.valor_ips) ||
-      normalizeNumber(form.precio_afiliado) !== normalizeNumber(props.prestacion.precio_afiliado) ||
-        normalizeNumber(form.porc_ips) !== normalizeNumber(props.prestacion.porc_ips) ||
-        normalizeNumber(form.uvr) !== normalizeNumber(props.prestacion.uvr) ||
+        normalizeNumber(form.precio_1) !== normalizeNumber(props.prestacion.precio_1) ||
+        normalizeNumber(form.precio_2) !== normalizeNumber(props.prestacion.precio_2) ||
+        normalizeNumber(form.precio_3) !== normalizeNumber(props.prestacion.precio_3) ||
+        normalizeNumber(form.precio_4) !== normalizeNumber(props.prestacion.precio_4) ||
         normalizeValue(form.observaciones) !== normalizeValue(props.prestacion.observaciones)
-})
-
-// Detectar cambios específicos en precios
-const hasChangedPrices = computed(() => {
-    return parseFloat(form.precio_general || 0) !== parseFloat(props.prestacion.precio_general || 0) ||
-        parseFloat(form.valor_ips || 0) !== parseFloat(props.prestacion.valor_ips || 0) ||
-        parseFloat(form.precio_afiliado || 0) !== parseFloat(props.prestacion.precio_afiliado || 0) ||
-        parseFloat(form.porc_ips || 0) !== parseFloat(props.prestacion.porc_ips || 0) ||
-        parseFloat(form.uvr || 0) !== parseFloat(props.prestacion.uvr || 0)
 })
 
 // Funciones de utilidad
@@ -478,11 +444,7 @@ watch(() => form.valor_ips, (newValue) => {
     }
 })
 
-watch(() => form.porc_ips, (newValue) => {
-  if (newValue && newValue < -100) {
-    form.porc_ips = -100
-  }
-})
+// Fin watch
 
 const submit = () => {
     console.log('=== SUBMIT FUNCTION CALLED ===')

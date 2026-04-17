@@ -22,6 +22,10 @@ class Prestacion extends Model
         'valor_ips',
         'val_ref',
         'porc_ips',
+        'precio_1',
+        'precio_2',
+        'precio_3',
+        'precio_4',
         'observaciones'
     ];
 
@@ -31,6 +35,10 @@ class Prestacion extends Model
         'valor_ips' => 'decimal:2',
         'val_ref' => 'decimal:2',
         'porc_ips' => 'decimal:2',
+        'precio_1' => 'decimal:2',
+        'precio_2' => 'decimal:2',
+        'precio_3' => 'decimal:2',
+        'precio_4' => 'decimal:2',
         'estado' => 'string'
     ];
 
@@ -67,6 +75,16 @@ class Prestacion extends Model
             ->withTimestamps();
     }
 
+    public function preciosSucursales()
+    {
+        return $this->hasMany(PrecioSucursal::class);
+    }
+
+    public function historialPrecios()
+    {
+        return $this->hasMany(HistorialPrecioPrestacion::class)->orderByDesc('created_at');
+    }
+
     public function scopeActivas($query)
     {
         return $query->where('estado', 'activo');
@@ -96,5 +114,30 @@ class Prestacion extends Model
 
         $siguienteNumero = intval($ultimo->codigo) + 1;
         return str_pad($siguienteNumero, 6, '0', STR_PAD_LEFT);
+    }
+
+    /**
+     * Resuelve el precio activo para una prestacion en un nivel y sucursal
+     * @param int $sucursalId
+     * @param int $nivel (1, 2, 3, 4)
+     * @return float
+     */
+    public function obtenerPrecio(int $sucursalId, int $nivel = 4): float
+    {
+        $nivel = min(max($nivel, 1), 4);
+        
+        $campoPrecio = "precio_" . $nivel;
+        
+        // 1. Buscar Excepcion de Sucursal Activa
+        $excepcion = $this->preciosSucursales()
+            ->where('sucursal_id', $sucursalId)
+            ->first();
+
+        if ($excepcion) {
+            return (float) $excepcion->$campoPrecio;
+        }
+
+        // 2. Si no hay excepcion, devolver precio base
+        return (float) $this->$campoPrecio;
     }
 }

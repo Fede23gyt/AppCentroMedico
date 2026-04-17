@@ -14,6 +14,7 @@ use App\Http\Controllers\OrdenController;
 use App\Http\Controllers\RendicionController;
 use App\Http\Controllers\MapeoSaludController;
 use App\Http\Controllers\ReporteController;
+use App\Http\Controllers\PrecioSucursalController;
 use App\Models\Prestacion;
 use App\Models\Plan;
 use App\Models\Rubro;
@@ -40,6 +41,7 @@ Route::middleware(['auth'])->group(function () {
         ->name('dashboard');
 
   Route::match(['GET', 'POST'], 'mapeo/generar', [\App\Http\Controllers\MapeoSaludController::class, 'generarMapeo'])->name('mapeo.generar');
+  Route::get('mapeo/analisis', [\App\Http\Controllers\MapeoSaludController::class, 'vistaAnalisis'])->name('mapeo.analisis');
   Route::get('mapeo/estadisticas', [\App\Http\Controllers\MapeoSaludController::class, 'obtenerEstadisticas'])->name('mapeo.estadisticas');
   Route::get('mapeo/listar', [\App\Http\Controllers\MapeoSaludController::class, 'listarMapeos'])->name('mapeo.listar');
   Route::post('mapeo/buscar', [\App\Http\Controllers\MapeoSaludController::class, 'buscarCobertura'])->name('mapeo.buscar');
@@ -124,12 +126,23 @@ Route::middleware(['auth'])->group(function () {
     Route::get('api/planes', [PlanController::class, 'apiList'])->name('api.planes');
 
     // Prestaciones
-    // Ruta para verificar código de prestación
+    // Ruta para verificar código de prestación (debe ir antes del resource)
     Route::get('prestaciones/check-codigo', [PrestacionController::class, 'checkCodigo'])
         ->name('prestaciones.check-codigo');
 
+    // Importar precios CSV (chunked - desde frontend, debe ir antes del resource)
+    Route::post('prestaciones/importar-precios-lote', [PrestacionController::class, 'importarPreciosLote'])
+        ->name('prestaciones.importar-precios-lote');
+
     Route::resource('prestaciones', PrestacionController::class)
         ->parameters(['prestaciones' => 'prestacion']);
+
+    // Excepciones de precios por sucursal
+    Route::resource('precios-sucursales', PrecioSucursalController::class);
+
+    // Límites de coberturas sin cargo
+    Route::post('limites-cobertura', [\App\Http\Controllers\LimiteCoberturaPrestacionController::class, 'store'])->name('limites-cobertura.store');
+    Route::delete('limites-cobertura/{limiteCobertura}', [\App\Http\Controllers\LimiteCoberturaPrestacionController::class, 'destroy'])->name('limites-cobertura.destroy');
 
     // ===== GESTIÓN DE PRESTACIONES-PLANES (EXISTENTES + NUEVAS) =====
     Route::prefix('prestaciones/{prestacion}')->group(function () {
@@ -314,6 +327,7 @@ Route::middleware(['auth'])->group(function () {
                         'codigo' => $prestacion->codigo,
                         'descripcion' => $prestacion->descripcion,
                         'precio_plan' => $precio ?? $prestacion->precio_general,
+                        'es_consulta' => in_array($prestacion->rubro_id, [1, 19]),
                     ];
                 });
         })->name('api.prestaciones.buscar');

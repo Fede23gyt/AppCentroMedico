@@ -77,18 +77,51 @@ class BeneficiarioExterno extends Model
     // Método para buscar por certificado con titular y beneficiarios
     public static function buscarPorCertificado($certificado)
     {
-        return static::activos()
-            ->porCertificado($certificado)
-            ->orderBy('IdVinculoCF') // Titular primero
+        return static::select('Beneficiarios.*')
+            ->join('Fichas', 'Beneficiarios.IdTitularCF', '=', 'Fichas.IdTitularCp')
+            ->where('Beneficiarios.IdTitularCF', $certificado)
+            ->where('Beneficiarios.Existe', 1) // Beneficiario activo
+            ->where('Fichas.Existe', 1) // Certificado/Ficha activo
+            ->orderBy('Beneficiarios.IdVinculoCF') // Titular primero
             ->get();
     }
 
     // Método para obtener solo el titular
     public static function obtenerTitular($certificado)
     {
-        return static::activos()
-            ->porCertificado($certificado)
-            ->titulares()
+        return static::select('Beneficiarios.*')
+            ->join('Fichas', 'Beneficiarios.IdTitularCF', '=', 'Fichas.IdTitularCp')
+            ->where('Beneficiarios.IdTitularCF', $certificado)
+            ->where('Beneficiarios.Existe', 1) // Beneficiario activo
+            ->where('Fichas.Existe', 1) // Certificado/Ficha activo
+            ->where('Beneficiarios.IdVinculoCf', 1) // Solo titular
             ->first();
+    }
+
+    // Método para verificar el estado del certificado
+    public static function verificarEstadoCertificado($certificado)
+    {
+        return \DB::connection('sqlsrv_externa')
+            ->table('Fichas')
+            ->where('IdTitularCp', $certificado)
+            ->select('IdTitularCp', 'Existe')
+            ->first();
+    }
+
+    // Método para obtener los planes del afiliado desde PlanesFichas
+    public static function obtenerPlanes($certificado)
+    {
+        $planes = \DB::connection('sqlsrv_externa')
+            ->table('PlanesFichas')
+            ->where('IdTitularCF', $certificado)
+            ->select('Plan')
+            ->get();
+
+        // Concatenar los planes y retornar como string
+        if ($planes->isEmpty()) {
+            return 'Sin Plan';
+        }
+
+        return $planes->pluck('Plan')->implode(', ');
     }
 }

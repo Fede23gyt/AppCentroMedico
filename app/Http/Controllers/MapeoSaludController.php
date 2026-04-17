@@ -6,9 +6,36 @@ use App\Models\MapeoPlanesCoberturas;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use App\Models\AnalisisMigracionAfiliado;
+use Inertia\Inertia;
 
 class MapeoSaludController extends Controller
 {
+  public function vistaAnalisis(Request $request)
+  {
+      $query = AnalisisMigracionAfiliado::query();
+
+      if ($request->filled('buscar')) {
+          $buscar = $request->input('buscar');
+          $query->where(function ($q) use ($buscar) {
+              $q->where('dni', 'like', "%{$buscar}%")
+                ->orWhere('apellido_nombre', 'like', "%{$buscar}%")
+                ->orWhere('id_titular_cf', 'like', "%{$buscar}%");
+          });
+      }
+
+      if ($request->filled('cobertura')) {
+          $query->where('cobertura_inferida', 'like', "%{$request->input('cobertura')}%");
+      }
+
+      $resultados = $query->orderBy('id_titular_cf')->paginate(50)->withQueryString();
+
+      return Inertia::render('Mapeo/AnalisisMigracion', [
+          'resultados' => $resultados,
+          'filtros' => $request->only('buscar', 'cobertura')
+      ]);
+  }
+
   /**
    * Genera la tabla de mapeo con las equivalencias
    * Este método consulta datos desde SQL Server y los guarda en MySQL

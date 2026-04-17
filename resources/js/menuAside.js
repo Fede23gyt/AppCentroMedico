@@ -19,7 +19,8 @@ import {
     mdiFolderMultiple,
     mdiCashCheck,
     mdiDoctor,
-    mdiCurrencyUsd
+    mdiCurrencyUsd,
+    mdiStore
 } from '@mdi/js'
 
 export default [
@@ -134,6 +135,11 @@ export default [
                         to: '/prestaciones/create',
                         label: 'Nueva Prestación',
                         icon: mdiMedicalBag
+                    },
+                    {
+                        to: '/precios-sucursales',
+                        label: 'Excepciones por Sucursal',
+                        icon: mdiStore
                     }
                 ]
             },
@@ -187,6 +193,17 @@ export default [
                         to: '/sucursales',
                         label: 'Sucursales',
                         icon: mdiBankTransfer
+                    }
+                ]
+            },
+            {
+                label: 'Migración y Mapeos',
+                icon: mdiTable,
+                menu: [
+                    {
+                        to: '/mapeo/analisis',
+                        label: 'Análisis Migración',
+                        icon: mdiTable
                     }
                 ]
             },

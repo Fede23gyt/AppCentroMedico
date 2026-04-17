@@ -6,6 +6,8 @@ use App\Models\Prestacion;
 use App\Models\Rubro;
 use App\Models\Plan;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 
 class PrestacionController extends Controller
@@ -59,12 +61,15 @@ class PrestacionController extends Controller
             'precio_general' => 'nullable|numeric|min:0',
             'precio_afiliado' => 'nullable|numeric|min:0',
             'valor_ips' => 'required|numeric|min:0',
-            'porc_ips' => 'required|numeric|min:-100',
+            'precio_1' => 'nullable|numeric|min:0',
+            'precio_2' => 'nullable|numeric|min:0',
+            'precio_3' => 'nullable|numeric|min:0',
+            'precio_4' => 'nullable|numeric|min:0',
             'observaciones' => 'nullable|string'
         ]);
 
-        // Calcular val_ref automáticamente con redondeo estándar
-        $validated['val_ref'] = round($validated['valor_ips'] * (1 + ($validated['porc_ips'] / 100)));
+        $validated['val_ref'] = $validated['valor_ips'];
+        $validated['porc_ips'] = 0;
 
         Prestacion::create($validated);
 
@@ -76,13 +81,27 @@ class PrestacionController extends Controller
     {
         $prestacion->load([
             'rubro',
+            'historialPrecios.user:id,name',
+            'preciosSucursales.sucursal',
             'planes' => function($query) {
                 $query->orderBy('nombre');
             }
         ]);
 
+        $limites = \App\Models\LimiteCoberturaPrestacion::where('prestacion_id', $prestacion->id)
+            ->orderByRaw('cobertura_codigo IS NULL DESC, cobertura_codigo ASC')
+            ->get();
+            
+        $coberturasDisponibles = \Illuminate\Support\Facades\DB::table('mapeo_coberturas_precios')
+            ->select('cobertura_codigo')
+            ->distinct()
+            ->orderBy('cobertura_codigo')
+            ->pluck('cobertura_codigo');
+
         return Inertia::render('Prestaciones/Show', [
-            'prestacion' => $prestacion
+            'prestacion' => $prestacion,
+            'limites' => $limites,
+            'coberturasDisponibles' => $coberturasDisponibles
         ]);
     }
 
@@ -111,13 +130,17 @@ class PrestacionController extends Controller
             'precio_general' => 'nullable|numeric|min:0',
             'precio_afiliado' => 'nullable|numeric|min:0',
             'valor_ips' => 'required|numeric|min:0',
-            'porc_ips' => 'required|numeric|min:-100',
+            'precio_1' => 'nullable|numeric|min:0',
+            'precio_2' => 'nullable|numeric|min:0',
+            'precio_3' => 'nullable|numeric|min:0',
+            'precio_4' => 'nullable|numeric|min:0',
             'uvr' => 'nullable|numeric|min:0',
             'observaciones' => 'nullable|string'
         ]);
 
-        // Calcular val_ref automáticamente con redondeo estándar
-        $validated['val_ref'] = round($validated['valor_ips'] * (1 + ($validated['porc_ips'] / 100)));
+        // val_ref pasa a ser el mismo valor_ips
+        $validated['val_ref'] = $validated['valor_ips'];
+        $validated['porc_ips'] = 0; // Se mantiene en DB como legacy
 
         \Log::info('Validated data:', $validated);
 
@@ -526,9 +549,6 @@ public function ajusteMasivoPrecios(Request $request, Prestacion $prestacion)
 
     return false; // Por ahora retorna false
     }
-    /**
-     * Verificar si un código de prestación ya existe
-     */
     public function checkCodigo(Request $request)
     {
         $request->validate([
@@ -541,5 +561,119 @@ public function ajusteMasivoPrecios(Request $request, Prestacion $prestacion)
             'exists' => $exists,
             'codigo' => $request->codigo
         ]);
+    }
+
+    /**
+     * Importar precios en LOTE (chunked) - llamado múltiples veces desde el frontend
+     * Acepta un JSON array de filas: [{codigo, precio_1, precio_2, precio_3, precio_4}, ...]
+     */
+    public function importarPreciosLote(Request $request)
+    {
+        $request->validate([
+            'rows'             => 'required|array|min:1',
+            'rows.*.codigo'   => 'required|string',
+            'rows.*.precio_1' => 'required|numeric',
+            'rows.*.precio_2' => 'required|numeric',
+            'rows.*.precio_3' => 'required|numeric',
+            'rows.*.precio_4' => 'required|numeric',
+        ]);
+
+        $rows    = $request->input('rows');
+        $codigos = array_map(fn($r) => $r['codigo'], $rows);
+
+        // 1. Traer todas las prestaciones del lote en UNA sola consulta
+        $prestaciones = Prestacion::whereIn('codigo', $codigos)
+            ->get()
+            ->keyBy('codigo');
+
+        $now           = now();
+        $hoy           = $now->toDateString();
+        $userId        = Auth::id();
+        $motivo        = 'Importación Masiva desde Archivo CSV';
+        $historial     = [];
+        $actualizados  = 0;
+
+        DB::beginTransaction();
+        try {
+            foreach ($rows as $row) {
+                $prestacion = $prestaciones->get($row['codigo']);
+                if (!$prestacion) continue;
+
+                $nuevosPrecios = [
+                    1 => (float) $row['precio_1'],
+                    2 => (float) $row['precio_2'],
+                    3 => (float) $row['precio_3'],
+                    4 => (float) $row['precio_4'],
+                ];
+
+                $cambios          = [];
+                $nivelesModificados = [];
+
+                foreach ($nuevosPrecios as $nivel => $valorNuevo) {
+                    $campo         = "precio_{$nivel}";
+                    $valorAnterior = (float) $prestacion->$campo;
+
+                    if ($valorAnterior === $valorNuevo) continue;
+
+                    $cambios[$campo] = $valorNuevo;
+                    $nivelesModificados[] = $nivel;
+
+                    $historial[] = [
+                        'prestacion_id'        => $prestacion->id,
+                        'nivel_precio'         => $nivel,
+                        'valor_anterior'       => $valorAnterior,
+                        'valor_nuevo'          => $valorNuevo,
+                        'fecha_vigencia_desde' => $hoy,
+                        'fecha_vigencia_hasta' => null,
+                        'user_id'              => $userId,
+                        'motivo'               => $motivo,
+                        'created_at'           => $now,
+                        'updated_at'           => $now,
+                    ];
+                }
+
+                if (!empty($cambios)) {
+                    // 2. Cerrar vigencias anteriores
+                    DB::table('historial_precios_prestaciones')
+                        ->where('prestacion_id', $prestacion->id)
+                        ->whereNull('fecha_vigencia_hasta')
+                        ->whereIn('nivel_precio', $nivelesModificados)
+                        ->update(['fecha_vigencia_hasta' => $hoy]);
+
+                    // 3. Actualizar precios directamente via DB para omitir el Observer (evitar doble historial)
+                    DB::table('prestaciones')
+                        ->where('id', $prestacion->id)
+                        ->update(array_merge($cambios, ['updated_at' => $now]));
+
+                    $actualizados++;
+                }
+            }
+
+            // 4. Insertar historial en bloque
+            if (!empty($historial)) {
+                DB::table('historial_precios_prestaciones')->insert($historial);
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'ok'           => true,
+                'actualizados' => $actualizados,
+                'procesados'   => count($rows),
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json(['ok' => false, 'error' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Auxiliar para limpiar strings de moneda
+     */
+    private function parseAmount($value)
+    {
+        $clean = str_replace('.', '', $value);
+        $clean = str_replace(',', '.', $clean);
+        return (float) $clean;
     }
 }

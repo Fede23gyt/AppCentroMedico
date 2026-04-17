@@ -47,7 +47,7 @@
                         v-for="(menu, index) in menu"
                         :key="index"
                         :menu="menu"
-                        @menu-click="$emit('menu-click', $event)"
+                        @menu-click="(event, item) => $emit('menu-click', event, item)"
                     />
                 </div>
             </div>

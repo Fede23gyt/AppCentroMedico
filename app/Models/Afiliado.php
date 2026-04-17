@@ -20,6 +20,7 @@ class Afiliado extends Model
         'items_actuales',
         'ultima_verificacion_items',
         'estado',
+        'cobertura_inferida',
     ];
 
     protected $casts = [
